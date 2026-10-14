@@ -22,8 +22,10 @@ struct TokenLayout {
         // Metadata includes: top-k indices, weight and source rank/token index
         with_metadata(with_metadata),
         num_topk(num_topk),
-        num_metadata_bytes(num_topk * (sizeof(int) + sizeof(float)) +
-                           (with_metadata ? (1 + num_topk) * sizeof(int) : 0)),
+        num_metadata_bytes(
+            num_topk * (sizeof(int) + sizeof(float)) +
+            (with_metadata ? (1 + num_topk) * sizeof(int) : 0)
+        ),
         base(base) {
         EP_STATIC_ASSERT(sizeof(int) == sizeof(float), "Invalid size assumption");
         EP_UNIFIED_ASSERT(num_hidden_bytes % kNumTMAAlignmentBytes == 0);

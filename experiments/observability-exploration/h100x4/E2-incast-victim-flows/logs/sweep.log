@@ -1,0 +1,63 @@
+patched /root/DeepEP/experiments/observability-exploration/common/pkg/deep_ep/include/deep_ep/impls/ep/dispatch.cuh: trace=1 wait_read=False pad_counters=False relocate_recv=0
+>> base ratio 1.0
+   rank 0: dispatch    598.3 us untraced,    600.2 us traced (+0.3%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 268
+   rank 1: dispatch    597.4 us untraced,    599.4 us traced (+0.3%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 269
+   rank 2: dispatch    597.5 us untraced,    599.5 us traced (+0.3%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 269
+   rank 3: dispatch    597.4 us untraced,    599.5 us traced (+0.3%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 268
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/base_ratio1.0_sms16.pt
+>> base ratio 1.5
+   rank 0: dispatch    585.8 us untraced,    587.6 us traced (+0.3%), E[k]=2.98, dst_counts=[4067, 2712, 2712, 2712], remote GB/s ~ 201
+   rank 1: dispatch    585.2 us untraced,    587.1 us traced (+0.3%), E[k]=2.98, dst_counts=[4070, 2714, 2714, 2714], remote GB/s ~ 235
+   rank 2: dispatch    585.4 us untraced,    587.2 us traced (+0.3%), E[k]=2.98, dst_counts=[4071, 2714, 2714, 2714], remote GB/s ~ 235
+   rank 3: dispatch    584.9 us untraced,    586.7 us traced (+0.3%), E[k]=2.98, dst_counts=[4064, 2709, 2709, 2709], remote GB/s ~ 234
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/base_ratio1.5_sms16.pt
+>> base ratio 2.0
+   rank 0: dispatch    463.2 us untraced,    464.9 us traced (+0.4%), E[k]=2.00, dst_counts=[3277, 1638, 1639, 1638], remote GB/s ~ 153
+   rank 1: dispatch    462.7 us untraced,    464.3 us traced (+0.4%), E[k]=2.00, dst_counts=[3277, 1638, 1639, 1638], remote GB/s ~ 205
+   rank 2: dispatch    462.7 us untraced,    464.4 us traced (+0.3%), E[k]=2.00, dst_counts=[3277, 1638, 1639, 1638], remote GB/s ~ 205
+   rank 3: dispatch    461.9 us untraced,    463.6 us traced (+0.4%), E[k]=2.00, dst_counts=[3277, 1639, 1638, 1638], remote GB/s ~ 205
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/base_ratio2.0_sms16.pt
+>> base ratio 3.0
+   rank 0: dispatch    554.4 us untraced,    556.3 us traced (+0.3%), E[k]=2.00, dst_counts=[4096, 1365, 1366, 1365], remote GB/s ~ 107
+   rank 1: dispatch    553.1 us untraced,    555.1 us traced (+0.4%), E[k]=2.00, dst_counts=[4096, 1365, 1366, 1365], remote GB/s ~ 179
+   rank 2: dispatch    553.7 us untraced,    555.6 us traced (+0.3%), E[k]=2.00, dst_counts=[4096, 1365, 1366, 1365], remote GB/s ~ 178
+   rank 3: dispatch    552.8 us untraced,    554.6 us traced (+0.3%), E[k]=2.00, dst_counts=[4096, 1366, 1365, 1365], remote GB/s ~ 179
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/base_ratio3.0_sms16.pt
+>> base ratio 4.0
+   rank 0: dispatch    320.5 us untraced,    322.1 us traced (+0.5%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 79
+   rank 1: dispatch    319.8 us untraced,    321.0 us traced (+0.4%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 159
+   rank 2: dispatch    319.6 us untraced,    321.4 us traced (+0.6%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 159
+   rank 3: dispatch    318.6 us untraced,    320.4 us traced (+0.6%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 159
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/base_ratio4.0_sms16.pt
+patched /root/DeepEP/experiments/observability-exploration/common/pkg/deep_ep/include/deep_ep/impls/ep/dispatch.cuh: trace=1 wait_read=True pad_counters=False relocate_recv=0
+>> waitread ratio 1.0
+   rank 0: dispatch    599.3 us untraced,    598.5 us traced (-0.1%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 268
+   rank 1: dispatch    598.6 us untraced,    597.8 us traced (-0.1%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 268
+   rank 2: dispatch    598.9 us untraced,    598.0 us traced (-0.1%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 268
+   rank 3: dispatch    598.0 us untraced,    597.2 us traced (-0.1%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 268
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/waitread_ratio1.0_sms16.pt
+>> waitread ratio 1.5
+   rank 0: dispatch    588.0 us untraced,    586.8 us traced (-0.2%), E[k]=2.98, dst_counts=[4067, 2712, 2712, 2712], remote GB/s ~ 200
+   rank 1: dispatch    587.6 us untraced,    586.4 us traced (-0.2%), E[k]=2.98, dst_counts=[4070, 2714, 2714, 2714], remote GB/s ~ 234
+   rank 2: dispatch    587.7 us untraced,    586.5 us traced (-0.2%), E[k]=2.98, dst_counts=[4071, 2714, 2714, 2714], remote GB/s ~ 234
+   rank 3: dispatch    586.8 us untraced,    585.7 us traced (-0.2%), E[k]=2.98, dst_counts=[4064, 2709, 2709, 2709], remote GB/s ~ 234
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/waitread_ratio1.5_sms16.pt
+>> waitread ratio 2.0
+   rank 0: dispatch    462.5 us untraced,    464.6 us traced (+0.5%), E[k]=2.00, dst_counts=[3277, 1638, 1639, 1638], remote GB/s ~ 154
+   rank 1: dispatch    461.6 us untraced,    463.9 us traced (+0.5%), E[k]=2.00, dst_counts=[3277, 1638, 1639, 1638], remote GB/s ~ 205
+   rank 2: dispatch    461.5 us untraced,    463.6 us traced (+0.5%), E[k]=2.00, dst_counts=[3277, 1638, 1639, 1638], remote GB/s ~ 205
+   rank 3: dispatch    461.3 us untraced,    463.5 us traced (+0.5%), E[k]=2.00, dst_counts=[3277, 1639, 1638, 1638], remote GB/s ~ 206
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/waitread_ratio2.0_sms16.pt
+>> waitread ratio 3.0
+   rank 0: dispatch    555.1 us untraced,    554.6 us traced (-0.1%), E[k]=2.00, dst_counts=[4096, 1365, 1366, 1365], remote GB/s ~ 107
+   rank 1: dispatch    554.3 us untraced,    553.7 us traced (-0.1%), E[k]=2.00, dst_counts=[4096, 1365, 1366, 1365], remote GB/s ~ 178
+   rank 2: dispatch    554.5 us untraced,    553.9 us traced (-0.1%), E[k]=2.00, dst_counts=[4096, 1365, 1366, 1365], remote GB/s ~ 178
+   rank 3: dispatch    554.3 us untraced,    553.8 us traced (-0.1%), E[k]=2.00, dst_counts=[4096, 1366, 1365, 1365], remote GB/s ~ 178
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/waitread_ratio3.0_sms16.pt
+>> waitread ratio 4.0
+   rank 0: dispatch    321.1 us untraced,    322.1 us traced (+0.3%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 79
+   rank 1: dispatch    320.1 us untraced,    321.5 us traced (+0.4%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 159
+   rank 2: dispatch    319.9 us untraced,    320.8 us traced (+0.3%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 159
+   rank 3: dispatch    319.4 us untraced,    320.6 us traced (+0.4%), E[k]=1.00, dst_counts=[2341, 585, 585, 585], remote GB/s ~ 159
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E2-incast-victim-flows/results/waitread_ratio4.0_sms16.pt
+patched /root/DeepEP/experiments/observability-exploration/common/pkg/deep_ep/include/deep_ep/impls/ep/dispatch.cuh: trace=1 wait_read=False pad_counters=False relocate_recv=0

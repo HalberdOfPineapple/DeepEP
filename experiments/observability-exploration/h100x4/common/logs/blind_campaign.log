@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/root/DeepEP/experiments/observability-exploration/h100x4/blind/attack.py", line 80, in <module>
+    run_case('baseline', ATTACKS['none'], os.path.join(HERE, 'baseline'))
+  File "/root/DeepEP/experiments/observability-exploration/h100x4/blind/attack.py", line 71, in run_case
+    json.dump(dict(case=name, **{k: v for k, v in attack.items() if k != 'external'}, external=attack['external'], flags=attack['flags'], wall_s=t1 - t0, time=time.strftime('%Y-%m-%d %H:%M:%S')), open(os.path.join(HERE, 'sealed', f'{name}.json'), 'w'), indent=1)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: dict() got multiple values for keyword argument 'flags'
+exit 1

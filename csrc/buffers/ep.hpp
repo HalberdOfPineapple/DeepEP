@@ -557,29 +557,31 @@ public:
         std::atomic_thread_fence(std::memory_order_seq_cst);
 
         // Do dispatch into the buffers (with SM limitation)
-        launch_dispatch(x.data_ptr(), sf_ptr,
-                        topk_idx.data_ptr<topk_idx_t>(), topk_weights_ptr,
-                        cumulative_local_expert_recv_stats_ptr,
-                        psum_num_recv_tokens_per_scaleup_rank.data_ptr<int>(),
-                        psum_num_recv_tokens_per_expert.data_ptr<int>(),
-                        num_unaligned_recv_tokens_per_expert_ptr,
-                        dst_buffer_slot_idx.data_ptr<int>(),
-                        token_metadata_at_forward_ptr,
-                        num_tokens, num_max_tokens_per_rank,
-                        hidden, x.element_size(),
-                        num_sf_packs, sf_token_stride, sf_hidden_stride,
-                        num_experts, num_topk, expert_alignment,
-                        context->dev_comm, context->window,
-                        context->buffer,
-                        context->workspace, mapped_host_workspace,
-                        context->scaleout_rank_idx, context->scaleup_rank_idx,
-                        context->num_scaleout_ranks, context->num_scaleup_ranks,
-                        context->is_scaleup_nvlink,
-                        num_sms, num_channels_per_sm,
-                        num_smem_bytes,
-                        num_qps, context->num_gpu_timeout_cycles,
-                        cached_mode, do_cpu_sync,
-                        comm_stream);
+        launch_dispatch(
+            x.data_ptr(), sf_ptr,
+            topk_idx.data_ptr<topk_idx_t>(), topk_weights_ptr,
+            cumulative_local_expert_recv_stats_ptr,
+            psum_num_recv_tokens_per_scaleup_rank.data_ptr<int>(),
+            psum_num_recv_tokens_per_expert.data_ptr<int>(),
+            num_unaligned_recv_tokens_per_expert_ptr,
+            dst_buffer_slot_idx.data_ptr<int>(),
+            token_metadata_at_forward_ptr,
+            num_tokens, num_max_tokens_per_rank,
+            hidden, x.element_size(),
+            num_sf_packs, sf_token_stride, sf_hidden_stride,
+            num_experts, num_topk, expert_alignment,
+            context->dev_comm, context->window,
+            context->buffer,
+            context->workspace, mapped_host_workspace,
+            context->scaleout_rank_idx, context->scaleup_rank_idx,
+            context->num_scaleout_ranks, context->num_scaleup_ranks,
+            context->is_scaleup_nvlink,
+            num_sms, num_channels_per_sm,
+            num_smem_bytes,
+            num_qps, context->num_gpu_timeout_cycles,
+            cached_mode, do_cpu_sync,
+            comm_stream
+        );
 
         // For tensor recording
         tensor_list_t tensors_to_record = {

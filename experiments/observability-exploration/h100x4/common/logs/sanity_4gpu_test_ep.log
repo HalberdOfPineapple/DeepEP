@@ -1,0 +1,70 @@
+Config:
+ > Ranks: 1 x 4
+ > Experts: 8/256
+ > Tokens: 4096 (max: 4096), hidden: 7168
+ > #SM: 64, #QPs: 9/17
+
+Running all test cases:
+ > Testing with expert_alignment=128, use_fp8_dispatch=1, num_bias=0, with_previous_event=0, async_with_compute_stream=1, allocate_on_comm_stream=0 ...
+USDT:2026-10-12 22:04:07 1013129:1013129 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:07 1013130:1013130 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:07 1013131:1013131 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:07 1013132:1013132 SyncActivityProfilerHandler.cpp:39] profiler_start
+
+
+
+USDT:2026-10-12 22:04:07 1013132:1013132 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:07 1013130:1013130 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:07 1013129:1013129 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:07 1013131:1013131 SyncActivityProfilerHandler.cpp:46] profiler_stop
+
+
+
+   * EP:   0/4 | dispatch: 0 GB/s (SO), 344 GB/s (SU), 321.785 us, 110567808 bytes | copy: 1681 GB/s, 131.586 us
+   * EP:   3/4 | dispatch: 0 GB/s (SO), 345 GB/s (SU), 321.845 us, 110979648 bytes | copy: 1893 GB/s, 117.267 us
+   * EP:   1/4 | dispatch: 0 GB/s (SO), 342 GB/s (SU), 324.255 us, 110882304 bytes | copy: 2330 GB/s, 95.170 us
+   * EP:   2/4 | dispatch: 0 GB/s (SO), 344 GB/s (SU), 321.674 us, 110769984 bytes | copy: 2195 GB/s, 100.918 us
+USDT:2026-10-12 22:04:08 1013129:1013129 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:08 1013130:1013130 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:08 1013132:1013132 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:08 1013131:1013131 SyncActivityProfilerHandler.cpp:39] profiler_start
+
+
+
+USDT:2026-10-12 22:04:08 1013131:1013131 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:08 1013132:1013132 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:08 1013130:1013130 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:08 1013129:1013129 SyncActivityProfilerHandler.cpp:46] profiler_stop
+
+
+
+   - EP:   0/4 | expanded dispatch: 0 GB/s (SO), 344 GB/s (SU), 320.955 us, 110567808 bytes | copy: 1667 GB/s, 228.187 us
+   - EP:   3/4 | expanded dispatch: 0 GB/s (SO), 345 GB/s (SU), 321.255 us, 110979648 bytes | copy: 1825 GB/s, 213.246 us
+   - EP:   1/4 | expanded dispatch: 0 GB/s (SO), 344 GB/s (SU), 322.197 us, 110882304 bytes | copy: 2228 GB/s, 174.457 us
+   - EP:   2/4 | expanded dispatch: 0 GB/s (SO), 345 GB/s (SU), 320.984 us, 110769984 bytes | copy: 2048 GB/s, 189.707 us
+USDT:2026-10-12 22:04:08 1013130:1013130 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:08 1013131:1013131 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:08 1013132:1013132 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:08 1013129:1013129 SyncActivityProfilerHandler.cpp:39] profiler_start
+
+
+
+USDT:2026-10-12 22:04:09 1013129:1013129 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:09 1013130:1013130 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:09 1013132:1013132 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:09 1013131:1013131 SyncActivityProfilerHandler.cpp:46] profiler_stop
+
+
+
+   # EP:   1/4 | cached dispatch: 0 GB/s (SO), 349 GB/s (SU), 317.390 us, 110882304 bytes | copy: 2821 GB/s, 78.612 us
+   # EP:   0/4 | cached dispatch: 0 GB/s (SO), 348 GB/s (SU), 317.592 us, 110567808 bytes | copy: 2013 GB/s, 109.834 us
+   # EP:   3/4 | cached dispatch: 0 GB/s (SO), 349 GB/s (SU), 317.730 us, 110979648 bytes | copy: 2281 GB/s, 97.292 us
+   # EP:   2/4 | cached dispatch: 0 GB/s (SO), 349 GB/s (SU), 317.672 us, 110769984 bytes | copy: 2679 GB/s, 82.706 us
+USDT:2026-10-12 22:04:09 1013130:1013130 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:09 1013132:1013132 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:09 1013131:1013131 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:09 1013129:1013129 SyncActivityProfilerHandler.cpp:39] profiler_start
+
+
+
+USDT:2026-10-12 22:04:09 1013131:1013131 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:09 1013132:1013132 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:09 1013129:1013129 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:09 1013130:1013130 SyncActivityProfilerHandler.cpp:46] profiler_stop
+
+
+
+   @ EP:   0/4 | combine: 0 GB/s (SO), 402 GB/s (SU), 527.934 us, 212157888 bytes | reduce: 2257 GB/s, 120.031 us
+   @ EP:   3/4 | combine: 0 GB/s (SO), 403 GB/s (SU), 527.971 us, 212948128 bytes | reduce: 2294 GB/s, 118.276 us
+   @ EP:   1/4 | combine: 0 GB/s (SO), 403 GB/s (SU), 528.153 us, 212761344 bytes | reduce: 2270 GB/s, 119.688 us
+   @ EP:   2/4 | combine: 0 GB/s (SO), 403 GB/s (SU), 527.881 us, 212545824 bytes | reduce: 2297 GB/s, 118.318 us
+USDT:2026-10-12 22:04:10 1013129:1013129 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:10 1013131:1013131 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:10 1013132:1013132 SyncActivityProfilerHandler.cpp:39] profiler_startUSDT:2026-10-12 22:04:10 1013130:1013130 SyncActivityProfilerHandler.cpp:39] profiler_start
+
+
+
+USDT:2026-10-12 22:04:10 1013131:1013131 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:10 1013129:1013129 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:10 1013132:1013132 SyncActivityProfilerHandler.cpp:46] profiler_stopUSDT:2026-10-12 22:04:10 1013130:1013130 SyncActivityProfilerHandler.cpp:46] profiler_stop
+
+
+
+   + EP:   0/4 | reduced combine: 0 GB/s (SO), 369 GB/s (SU), 575.731 us, 212157888 bytes | reduce: 2256 GB/s, 120.084 us
+   + EP:   3/4 | reduced combine: 0 GB/s (SO), 370 GB/s (SU), 576.219 us, 212948128 bytes | reduce: 2293 GB/s, 118.312 us
+   + EP:   1/4 | reduced combine: 0 GB/s (SO), 370 GB/s (SU), 575.721 us, 212761344 bytes | reduce: 2274 GB/s, 119.510 us
+   + EP:   2/4 | reduced combine: 0 GB/s (SO), 369 GB/s (SU), 575.849 us, 212545824 bytes | reduce: 2302 GB/s, 118.081 us
+
+

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnosing a degraded memory-semantic operation</title><meta name="description" content="A structured procedure: signal points, baseline, phase location, per-phase attribution rules, confirmation by manipulation, and where it stops.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root { --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#ECEFF3; --ink:#17202A; --muted:#5A6572; --line:#D5DBE2; --accent:#2B59C3; --accent-soft:#E3EAFA;
+  --ok:#11806E; --ok-soft:#DDF2EE; --warn:#B0620B; --warn-soft:#FBEBD8; --bad:#B42A2A; --bad-soft:#F9E1E1; --type:#7446B5; --type-soft:#EDE5F8; --code-bg:#EEF1F5;
+  --font-body:"IBM Plex Sans",system-ui,sans-serif; --font-head:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif; --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme:dark; --bg:#0E1318; --surface:#151C23; --surface-2:#1C252F; --ink:#E3E8EE; --muted:#97A2AE; --line:#2B3541; --accent:#8AABFF; --accent-soft:#1D2A48; --ok:#4FC8B2; --ok-soft:#123330; --warn:#E8A650; --warn-soft:#3A2A14; --bad:#F08A8A; --bad-soft:#3D1B1B; --type:#C4A7F4; --type-soft:#2A2040; --code-bg:#111920; } }
+:root[data-theme="dark"] { color-scheme:dark; --bg:#0E1318; --surface:#151C23; --surface-2:#1C252F; --ink:#E3E8EE; --muted:#97A2AE; --line:#2B3541; --accent:#8AABFF; --accent-soft:#1D2A48; --ok:#4FC8B2; --ok-soft:#123330; --warn:#E8A650; --warn-soft:#3A2A14; --bad:#F08A8A; --bad-soft:#3D1B1B; --type:#C4A7F4; --type-soft:#2A2040; --code-bg:#111920; }
+*{box-sizing:border-box} body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;margin:0;padding:0 16px 64px}
+main{max-width:900px;margin:0 auto;padding-top:36px} h1,h2,h3{font-family:var(--font-head);line-height:1.15} h1{font-size:clamp(30px,4.5vw,42px);margin:0 0 8px}
+h2{font-size:26px;margin:48px 0 8px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:19px;margin:28px 0 6px} p{margin:0 0 14px} .lede{font-size:18px;color:var(--muted)}
+.meta{font-size:13px;color:var(--muted);font-family:var(--font-mono);margin-bottom:24px} code{font-family:var(--font-mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--font-mono);font-size:12.5px;background:var(--code-bg);padding:12px 14px;border-radius:8px;overflow-x:auto;line-height:1.5} a{color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0 18px} th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}
+th{font-family:var(--font-head);font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)} td.num,th.num{text-align:right;font-family:var(--font-mono);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0 20px} .callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.finding{border-left:4px solid var(--ok);background:var(--ok-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0} .warnbox{border-left:4px solid var(--warn);background:var(--warn-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+figure{margin:16px 0 22px} figure svg{max-width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px}
+figure svg.chart{padding:10px 6px} figcaption{font-size:13px;color:var(--muted);margin-top:8px}
+svg text{font-family:var(--font-body);font-size:12px;fill:var(--ink)} svg .mono{font-family:var(--font-mono);font-size:11px} svg .small{font-size:10.5px;fill:var(--muted)} svg .head{font-family:var(--font-head);font-size:13px;font-weight:600}
+svg .box{fill:var(--surface-2);stroke:var(--line)} svg .box-ok{fill:var(--ok-soft);stroke:var(--ok)} svg .box-warn{fill:var(--warn-soft);stroke:var(--warn)} svg .box-bad{fill:var(--bad-soft);stroke:var(--bad)} svg .box-acc{fill:var(--accent-soft);stroke:var(--accent)} svg .box-type{fill:var(--type-soft);stroke:var(--type)}
+svg .ln{stroke:var(--ink);stroke-width:1.4;fill:none} svg .ln-acc{stroke:var(--accent);stroke-width:1.6;fill:none} svg .ln-warn{stroke:var(--warn);stroke-width:1.6;fill:none} svg .ln-bad{stroke:var(--bad);stroke-width:1.6;fill:none;stroke-dasharray:5 4} svg .ln-mut{stroke:var(--muted);stroke-width:1;fill:none;stroke-dasharray:3 3}
+svg .fill-acc{fill:var(--accent)} svg .fill-warn{fill:var(--warn)} svg .fill-bad{fill:var(--bad)} svg .fill-ok{fill:var(--ok)} svg .fill-mut{fill:var(--muted)}
+svg.chart text{fill:var(--ink)} svg.chart .ytick text, svg.chart .xtick text{fill:var(--muted)}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);margin-right:4px} .tag.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent} .tag.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent} .tag.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+ul,ol{padding-left:22px} li{margin-bottom:6px} .kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:14px;margin:8px 0 14px} .kv .k{color:var(--muted);font-family:var(--font-mono);font-size:12.5px}
+</style></head><body><main>
+<h1>Diagnosing a degraded memory-semantic operation</h1><p class="lede">A structured procedure: signal points, baseline, phase location, per-phase attribution rules, confirmation by manipulation, and where it stops.</p><div class="meta">notes · method, grounded in experiments E0–E9 on h100x4 · 2026-10-13</div>
+
+<p class="lede">A structured way to go from "this dispatch was slow" to an owner: which phase, which location, which cause. Written in the manner of FabricPerf's methodology section, with the difference that the signal points sit inside a production kernel rather than in a probe, and that the procedure is a decision tree validated by the ten experiments in <a href="../experiments/observability-exploration/h100x4/index.html">experiments/observability-exploration/h100x4</a>.</p>
+
+<h2>1. The object and the question</h2>
+<p>The operation under diagnosis is one memory-semantic collective, DeepEP's dispatch: every rank's warps write tokens straight into peers' memory with bulk stores, exchange counts with 8-byte stores, and synchronise twice with barrier words. FabricPerf asks "how long does a transfer take between two endpoints", and answers it by timestamping a probe transfer at five points. The question here is different: <b>given that one such operation took longer than its baseline, which of its phases absorbed the excess, at which location along the path, and what caused it.</b> The answer must name an owner, because the remedies differ: a scheduler, the host code, the routing, a neighbouring kernel, the placement of blocks on SMs, or the fabric itself.</p>
+<p>Two facts from the experiments shape the method. The sender's only per-store event, <code>cp.async.bulk.wait_group</code>, returns when the SM's copy engine has accepted the store, not when the peer has it; and the receiver has no per-store event at all. So the path splits into a lit part, everything up to the SM's queue, where stamps attribute precisely, and a dark part, from the port to the peer's memory, where only inference is possible. The procedure is built to exhaust the lit part before concluding anything about the dark one.</p>
+
+<h2>2. Signal points</h2>
+<figure><svg viewBox="0 0 880 470" role="img" aria-label="Nine signal points S1 to S9 along one dispatch, from the host call through the kernel phases to the host return, with the per-token and per-lane stamps inside the loop; each point says which thread records it and on which clock">
+<defs><marker id="ma" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker></defs>
+<text x="20" y="24" class="head">Signal points on one rank (compare FabricPerf's T1–T5 on one transfer)</text>
+<line x1="20" y1="70" x2="860" y2="70" class="ln"/>
+<g class="mono">
+<circle cx="40" cy="70" r="6" class="fill-bad"/><text x="40" y="52" text-anchor="middle">S1</text>
+<circle cx="130" cy="70" r="6" class="fill-acc"/><text x="130" y="52" text-anchor="middle">S2</text>
+<circle cx="220" cy="70" r="6" class="fill-acc"/><text x="220" y="52" text-anchor="middle">S3</text>
+<circle cx="330" cy="70" r="6" class="fill-acc"/><text x="330" y="52" text-anchor="middle">S4</text>
+<circle cx="560" cy="70" r="6" class="fill-acc"/><text x="560" y="52" text-anchor="middle">S5</text>
+<circle cx="650" cy="70" r="6" class="fill-acc"/><text x="650" y="52" text-anchor="middle">S6</text>
+<circle cx="740" cy="70" r="6" class="fill-acc"/><text x="740" y="52" text-anchor="middle">S7</text>
+<circle cx="840" cy="70" r="6" class="fill-bad"/><text x="840" y="52" text-anchor="middle">S8</text>
+</g>
+<g class="small">
+<text x="40" y="92" text-anchor="middle">host call</text>
+<text x="130" y="92" text-anchor="middle">kernel entry</text>
+<text x="220" y="92" text-anchor="middle">barrier arrive /</text><text x="220" y="106" text-anchor="middle">release</text>
+<text x="330" y="92" text-anchor="middle">counts: C, E issued,</text><text x="330" y="106" text-anchor="middle">F done, H done</text>
+<text x="560" y="92" text-anchor="middle">last warp done</text>
+<text x="650" y="92" text-anchor="middle">close arrive /</text><text x="650" y="106" text-anchor="middle">release</text>
+<text x="740" y="92" text-anchor="middle">kernel end</text>
+<text x="840" y="92" text-anchor="middle">host return</text>
+</g>
+<text x="85" y="126" text-anchor="middle" class="small">A · sync in</text><text x="275" y="126" text-anchor="middle" class="small">B · counts</text><text x="445" y="126" text-anchor="middle" class="small">C · loop (D in flight)</text><text x="650" y="126" text-anchor="middle" class="small">E · sync out</text><text x="790" y="126" text-anchor="middle" class="small">F · hand-off</text>
+<rect x="335" y="150" width="525" height="130" rx="8" class="box"/><text x="345" y="170" class="head">S9 · inside the loop, per warp and per lane</text>
+<g class="small">
+<text x="345" y="192">per token: loop top → slot free (C1) → token loaded (C2) → stores issued (C3)</text>
+<text x="345" y="210">per lane: store issue, wait_group return (local acceptance), destination, atomic return</text>
+<text x="345" y="228">per warp: first entry, last store accepted, tokens, block and physical SM (%smid)</text>
+<text x="345" y="246">per count store: sender stamp after the store, receiver stamp when its poll sees it</text>
+<text x="345" y="264">cost about 1 % of kernel time; buffer passed through an existing kernel argument</text>
+</g>
+<rect x="20" y="150" width="300" height="130" rx="8" class="box-type"/><text x="30" y="170" class="head">Clocks</text>
+<g class="small">
+<text x="30" y="192">S2–S7, S9: this GPU's %globaltimer (32 ns steps)</text>
+<text x="30" y="210">S1, S8: host perf_counter mapped to the GPU clock</text>
+<text x="30" y="228">via a 1-thread timer kernel, host-bracketed (±5 µs)</text>
+<text x="30" y="246">Cross-rank: ping-pong offsets measured before and</text>
+<text x="30" y="264">after every kernel (0.1 µs closure; drift ms per hour)</text>
+</g>
+<rect x="20" y="300" width="840" height="150" rx="8" class="box-ok"/><text x="30" y="320" class="head">Derived quantities (the "metrics" in FabricPerf's sense)</text>
+<g class="small">
+<text x="30" y="342">launch path = S2 − S1 · opening wait = S3 release − S3 arrive · entry skew = max − min of S2 over ranks on one clock</text>
+<text x="30" y="360">counts one-way = S4(F, receiver) − S4(E, sender) − offset · data plane = S5 − S3 release · warp tail = last − first S5 across warps</text>
+<text x="30" y="378">closing wait = S6 release − S5 · hand-off = S7 − S6 · return path = S8 − S7 · C1, C2, C3 per warp · per-lane store latency by destination and SM</text>
+<text x="30" y="396">per-TPC finish level · slot-atomic latency · outside the kernel: per-link NVLink bytes before/after (read where the perturbation has decayed)</text>
+<text x="30" y="424">Baseline: every quantity has a reference value from a quiet run of the same configuration (tokens, SMs, ranks); "excess" below means value − baseline.</text>
+</g>
+</svg><figcaption>Figure 1. The signal points S1–S9 along one dispatch on one rank, the clocks they are taken on, and the derived quantities. S1 and S8 are host stamps; S2–S7 are SM 0 stamps of the kernel phases; S9 is the per-warp and per-lane record inside the loop.</figcaption></figure>
+<p>Every signal is recorded by a thread that already exists in the kernel, into a buffer passed through an existing kernel argument, at a cost of about 1 % of kernel time. Two things make the signals comparable: a per-run clock calibration between every pair of GPUs, bracketing each kernel (the clocks drift by milliseconds per hour, so a one-time calibration is wrong within minutes), and a host-to-GPU mapping good to about ±5 µs. Each derived quantity has a <b>baseline</b> from a quiet run of the same configuration; the diagnosis works on the excess over that baseline, never on absolute values.</p>
+<p>What is deliberately <em>not</em> in the signal set: any counter read from the host during the kernel. One NVML field-value read perturbs the GPUs for about a millisecond and shifts launches by hundreds of µs, so link counters are read only before the barrier that precedes the launch and after the final synchronisation, and used as per-kernel byte totals.</p>
+
+<h2>3. The procedure</h2>
+<ol>
+<li><b>Establish the baseline.</b> Run the same configuration (ranks, tokens, SMs, routing) in isolation a few times with the signals on. Record the median of every derived quantity in Figure 1, including the per-TPC finish levels of this GPU, which are a fixed property of its placement.</li>
+<li><b>Record the degraded operation</b> with the same signals, plus the per-kernel link byte totals and, if the operation runs beside other streams, their kernel names and durations.</li>
+<li><b>Locate the excess by phase.</b> For each rank, subtract baseline from measured for A (launch path and opening wait), B (count exchange), C (data plane), E (tail and closing wait) and F (hand-off and return). The largest excess names the phase; if the excesses on different ranks differ, the rank with the largest one is the starting point. Phase D is never located directly: it manifests inside C as longer waits.</li>
+<li><b>Apply the attribution rule of that phase</b> (Figure 2). Each rule is a question answered by one signal, and each leaf names an owner.</li>
+<li><b>Confirm by manipulation.</b> The leaf predicts what a knob should change: fewer SMs if the finding is link-side back-pressure (E0), the delayed rank's launch if it is skew (E6), the other stream's traffic if it is a foreign kernel (E8), the block placement if it is a TPC level (E7). One re-run with the knob turned either confirms the owner or sends the diagnosis back to step 3.</li>
+</ol>
+<figure><svg viewBox="0 0 880 650" role="img" aria-label="Decision tree of the diagnosis: locate the excess by phase, then within each phase apply the attribution rule that separates the possible causes, ending at an owner: host, scheduler, this kernel, a peer, the sender SM, the link, a foreign kernel, or the dark segment">
+<defs><marker id="ta" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker></defs>
+<rect x="290" y="14" width="300" height="40" rx="8" class="box-acc"/><text x="440" y="32" text-anchor="middle" class="head">Step 1 · which phase holds the excess?</text><text x="440" y="47" text-anchor="middle" class="small">per rank: A, B, C, E, F from S1–S8 minus baseline</text>
+<path d="M440 54 L440 76" class="ln-mut" marker-end="url(#ta)"/>
+<g class="small">
+<rect x="20" y="80" width="160" height="34" rx="6" class="box"/><text x="100" y="101" text-anchor="middle" class="head">A · sync in</text>
+<rect x="190" y="80" width="165" height="34" rx="6" class="box"/><text x="272" y="101" text-anchor="middle" class="head">B · counts</text>
+<rect x="365" y="80" width="200" height="34" rx="6" class="box"/><text x="465" y="101" text-anchor="middle" class="head">C · loop (and D)</text>
+<rect x="570" y="80" width="165" height="34" rx="6" class="box"/><text x="652" y="101" text-anchor="middle" class="head">E · sync out</text>
+<rect x="745" y="80" width="120" height="34" rx="6" class="box"/><text x="805" y="101" text-anchor="middle" class="head">F · hand-off</text>
+<path d="M440 76 L100 80 M440 76 L272 80 M440 76 L465 80 M440 76 L652 80 M440 76 L805 80" class="ln-mut"/>
+
+<!-- A -->
+<rect x="20" y="130" width="160" height="52" rx="6" class="box"/><text x="100" y="148" text-anchor="middle">entry skew (S2, one clock)</text><text x="100" y="162" text-anchor="middle">which rank entered last?</text><text x="100" y="176" text-anchor="middle">→ that rank; else barrier itself</text>
+<rect x="20" y="192" width="160" height="52" rx="6" class="box"/><text x="100" y="210" text-anchor="middle">on that rank: S2 − S1 large?</text><text x="100" y="224" text-anchor="middle">yes → GPU busy pre-launch</text><text x="100" y="238" text-anchor="middle">no → host was late (S1 late)</text>
+<rect x="20" y="254" width="160" height="52" rx="6" class="box-ok"/><text x="100" y="272" text-anchor="middle">owner: preceding kernel /</text><text x="100" y="286" text-anchor="middle">launch scheduler (E5) or</text><text x="100" y="300" text-anchor="middle">host CPU (E6, E9)</text>
+<path d="M100 114 L100 130 M100 182 L100 192 M100 244 L100 254" class="ln-mut" marker-end="url(#ta)"/>
+
+<!-- B -->
+<rect x="190" y="130" width="165" height="52" rx="6" class="box"/><text x="272" y="148" text-anchor="middle">one-way count latency</text><text x="272" y="162" text-anchor="middle">inflated for all senders?</text><text x="272" y="176" text-anchor="middle">or only from one sender?</text>
+<rect x="190" y="192" width="165" height="52" rx="6" class="box"/><text x="272" y="210" text-anchor="middle">all → queued behind data</text><text x="272" y="224" text-anchor="middle">(check C on senders, E4)</text><text x="272" y="238" text-anchor="middle">one → that sender's A or C</text>
+<rect x="190" y="254" width="165" height="52" rx="6" class="box-ok"/><text x="272" y="272" text-anchor="middle">owner: this kernel's data</text><text x="272" y="286" text-anchor="middle">plane, or the late peer</text>
+<path d="M272 114 L272 130 M272 182 L272 192 M272 244 L272 254" class="ln-mut" marker-end="url(#ta)"/>
+
+<!-- C -->
+<rect x="365" y="130" width="200" height="52" rx="6" class="box"/><text x="465" y="148" text-anchor="middle">which part grew, per warp?</text><text x="465" y="162" text-anchor="middle">C2 (load, atomic) · C3 (issue)</text><text x="465" y="176" text-anchor="middle">C1 (slot wait)</text>
+<rect x="365" y="192" width="200" height="52" rx="6" class="box"/><text x="465" y="210" text-anchor="middle">C2 only → local memory busy</text><text x="465" y="224" text-anchor="middle">(HBM neighbour, E5) or atomic</text><text x="465" y="238" text-anchor="middle">funnel (E3) → owner: this GPU</text>
+<rect x="365" y="254" width="200" height="52" rx="6" class="box"/><text x="465" y="272" text-anchor="middle">C3 up, C1 flat → SM drain-bound</text><text x="465" y="286" text-anchor="middle">by %smid: fixed TPC levels?</text><text x="465" y="300" text-anchor="middle">→ owner: placement (E7)</text>
+<rect x="365" y="316" width="200" height="52" rx="6" class="box"/><text x="465" y="334" text-anchor="middle">C1 and C3 up on all SMs → link</text><text x="465" y="348" text-anchor="middle">back-pressure: split by destination</text><text x="465" y="362" text-anchor="middle">and read link bytes</text>
+<rect x="365" y="378" width="200" height="64" rx="6" class="box-warn"/><text x="465" y="396" text-anchor="middle">hot destination intake capped,</text><text x="465" y="410" text-anchor="middle">latency equal to all dsts: incast</text><text x="465" y="424" text-anchor="middle">through the sender FIFO (E2)</text><text x="465" y="438" text-anchor="middle">→ owner: routing</text>
+<rect x="365" y="452" width="200" height="64" rx="6" class="box-warn"/><text x="465" y="470" text-anchor="middle">link bytes ≫ this kernel's bytes</text><text x="465" y="484" text-anchor="middle">→ foreign kernel on the links (E8)</text><text x="465" y="498" text-anchor="middle">→ owner: the other stream / job</text>
+<rect x="365" y="526" width="200" height="64" rx="6" class="box-bad"/><text x="465" y="544" text-anchor="middle">none of the above: uniform,</text><text x="465" y="558" text-anchor="middle">own bytes only, no TPC pattern</text><text x="465" y="572" text-anchor="middle">→ self-saturation or dark segment;</text><text x="465" y="586" text-anchor="middle">confirm with SM-count sweep (E0)</text>
+<path d="M465 114 L465 130 M465 182 L465 192 M465 244 L465 254 M465 306 L465 316 M465 368 L465 378 M465 442 L465 452 M465 516 L465 526" class="ln-mut" marker-end="url(#ta)"/>
+
+<!-- E -->
+<rect x="570" y="130" width="165" height="52" rx="6" class="box"/><text x="652" y="148" text-anchor="middle">close arrive (S6) per rank</text><text x="652" y="162" text-anchor="middle">on one clock: who was last?</text><text x="652" y="176" text-anchor="middle">this rank or a peer?</text>
+<rect x="570" y="192" width="165" height="52" rx="6" class="box"/><text x="652" y="210" text-anchor="middle">this rank → warp tail (S5):</text><text x="652" y="224" text-anchor="middle">by TPC level (E7) or by</text><text x="652" y="238" text-anchor="middle">destination mix (E2)</text>
+<rect x="570" y="254" width="165" height="52" rx="6" class="box-ok"/><text x="652" y="272" text-anchor="middle">peer → diagnose that rank's</text><text x="652" y="286" text-anchor="middle">C; owner: peer or placement</text>
+<path d="M652 114 L652 130 M652 182 L652 192 M652 244 L652 254" class="ln-mut" marker-end="url(#ta)"/>
+
+<!-- F -->
+<rect x="745" y="130" width="120" height="52" rx="6" class="box"/><text x="805" y="148" text-anchor="middle">S7 − S6: epilogue</text><text x="805" y="162" text-anchor="middle">S8 − S7: host return,</text><text x="805" y="176" text-anchor="middle">mailbox, allocation</text>
+<rect x="745" y="192" width="120" height="52" rx="6" class="box-ok"/><text x="805" y="210" text-anchor="middle">owner: epilogue kernel</text><text x="805" y="224" text-anchor="middle">or host code (E9)</text>
+<path d="M805 114 L805 130 M805 182 L805 192" class="ln-mut" marker-end="url(#ta)"/>
+</g>
+<text x="20" y="618" class="small">Green: owner found. Amber: owner found but outside this kernel (routing, another stream).</text><text x="20" y="636" class="small">Red: where attribution ends today; the SM-count sweep and the release round trip are the only remaining probes.</text>
+</svg><figcaption>Figure 2. The decision tree. Step 1 locates the phase; each column is the attribution rule for that phase, read top to bottom; leaves name the owner. The experiment that validated each rule is given in parentheses.</figcaption></figure>
+
+<h3>3.1 The rules, with what separates the causes</h3>
+<table>
+<thead><tr><th>Phase</th><th>Question</th><th>Signal</th><th>Separates</th><th>Validated by</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>Which rank entered last, and was its GPU or its host late?</td><td>entry skew on one clock; S2 − S1 on that rank</td><td>a late peer from a slow barrier; a busy GPU (preceding kernel, launch queue) from a slow host</td><td>E6 (delay recovered 1:1 beyond an 85 µs allowance), E5 (launch waits 1–2 ms beside compute), E9</td></tr>
+<tr><td>B</td><td>Are the count stores late from every sender or from one?</td><td>per-store one-way latency, by sender</td><td>control stores queued behind data (all senders inflate together) from one peer being late in its own phase A or C</td><td>E4 (1.8 µs quiet → 70 µs under incast)</td></tr>
+<tr><td>C</td><td>Which part of the loop grew?</td><td>C1, C2, C3 per warp</td><td>local memory (C2) from SM drain (C3, C1 flat) from link-side back-pressure (C1 and C3)</td><td>E0, E5</td></tr>
+<tr><td>C</td><td>Is the slowdown tied to the SM?</td><td>per-warp finish and C3 grouped by %smid</td><td>fixed per-TPC levels (placement) from a uniform shift (link or foreign traffic)</td><td>E7 (R² 88 % by block, 1 % by work)</td></tr>
+<tr><td>C</td><td>Is it tied to a destination?</td><td>per-lane latency by destination; hot rank's intake</td><td>incast: the hot destination's intake caps while every destination's latency rises equally, through the sender's shared queue</td><td>E2</td></tr>
+<tr><td>C</td><td>Are there bytes on the links that are not ours?</td><td>per-link byte totals vs this kernel's own bytes</td><td>a foreign kernel from self-saturation; the stamp signature of the two is identical</td><td>E8 (NCCL beside: data plane ×2)</td></tr>
+<tr><td>E</td><td>Who arrived last at the closing barrier?</td><td>S6 arrive per rank on one clock; this rank's warp tail by TPC</td><td>own tail (placement) from a slow peer</td><td>E0, E6, E7</td></tr>
+<tr><td>F</td><td>Epilogue or host?</td><td>S7 − S6, S8 − S7</td><td>the epilogue kernel from the host mailbox poll and allocation</td><td>E9 (37 of 142 µs)</td></tr>
+</tbody>
+</table>
+
+<h2>4. Worked examples</h2>
+<figure><svg viewBox="0 0 880 300" role="img" aria-label="Worked example: the same symptom, a dispatch whose data plane doubled, diagnosed in three cases from the experiments: a NCCL all-to-all on the links, a late peer, and the per-TPC tail; the table shows which signal separated them">
+<text x="20" y="24" class="head">Three cases with the same first symptom, "dispatch took twice as long"</text>
+<g class="small">
+<rect x="20" y="40" width="270" height="240" rx="8" class="box"/><text x="30" y="60" class="head">E8: NCCL all-to-all beside it</text>
+<text x="30" y="82">Step 1: excess in C (data plane 537 → 1165 µs)</text>
+<text x="30" y="100">C1 p99 15 → 55 µs, C3 11.6 → 15.5 µs, all SMs</text>
+<text x="30" y="118">per destination: equal</text>
+<text x="30" y="136">per TPC: same levels as baseline, shifted</text>
+<text x="30" y="154">link bytes: 1.9–3.9 GB vs 0.64 GB own</text>
+<text x="30" y="182" class="head">→ foreign kernel on the links</text>
+<text x="30" y="200">owner: the other stream</text>
+<text x="30" y="226">Without the link counters this is</text><text x="30" y="240">indistinguishable from self-saturation.</text>
+<rect x="305" y="40" width="270" height="240" rx="8" class="box"/><text x="315" y="60" class="head">E6: rank 0 delayed 500 µs</text>
+<text x="315" y="82">Step 1: excess in A on ranks 1–3 (424 µs)</text>
+<text x="315" y="100">entry skew on one clock: rank 0 last by 419 µs</text>
+<text x="315" y="118">rank 0: S2 − S1 = 481 µs (vs 65 baseline)</text>
+<text x="315" y="136">→ its GPU was busy before the launch</text>
+<text x="315" y="154">data plane: unchanged on every rank</text>
+<text x="315" y="182" class="head">→ late peer, GPU-side cause</text>
+<text x="315" y="200">owner: rank 0's preceding work</text>
+<text x="315" y="226">Without one clock across ranks this is</text><text x="315" y="240">"the barrier took 424 µs".</text>
+<rect x="590" y="40" width="270" height="240" rx="8" class="box"/><text x="600" y="60" class="head">E7: the ordinary tail</text>
+<text x="600" y="82">Step 1: excess in E on this rank (tail 240 µs)</text>
+<text x="600" y="100">close arrive: this rank is last</text>
+<text x="600" y="118">warp finish by work: R² 1 %</text>
+<text x="600" y="136">warp finish by %smid: R² 88 %, TPC pairs</text>
+<text x="600" y="154">at fixed levels 1 : 1.2 : 1.4</text>
+<text x="600" y="182" class="head">→ placement, not routing or fabric</text>
+<text x="600" y="200">owner: block → SM placement</text>
+<text x="600" y="226">Without %smid in the trace this is</text><text x="600" y="240">"some warps are slow".</text>
+</g>
+</svg><figcaption>Figure 3. Three operations with the same first symptom, diagnosed by the procedure. The last line of each card says what the diagnosis would have been without the separating signal.</figcaption></figure>
+
+<h2>5. Where the procedure stops</h2>
+<p>The red leaf in Figure 2 is reached when the excess sits in C, is uniform over SMs and destinations, and the links carry only this kernel's bytes. The stamps then say "the SM's queue towards the link drained slowly" and nothing more: whether the bytes waited at this GPU's egress port, in the switch, at the peer's ingress or in the peer's memory system is not observable from either end. Two probes remain, both coarse: the SM-count sweep (if throughput follows the per-SM rate the limit is local, if it plateaus the limit is on the path, E0), and a system-scope release once per kernel, which costs a round trip and gives one sample of the path's latency. Everything else requires a signal the hardware does not currently expose: a per-destination completion or arrival counter in the memory system, or port counters with sub-microsecond timestamps readable from the GPU. The diagnosis procedure is therefore also a specification: it says exactly which question that signal would answer and at which leaf it would be consulted.</p>
+
+<h2>6. How this differs from FabricPerf's method</h2>
+<ul>
+<li><b>Signals inside the workload, not in a probe.</b> FabricPerf's T1–T5 are on a synthetic transfer; a production kernel's behaviour under its own contention, scheduling and placement is what degrades, and the probe cannot stand in for it. Cooperative instrumentation through the library costs 1 % and sees every store with its destination.</li>
+<li><b>Phases before transfers.</b> Most excess time in the experiments was not in transfers at all: launch allowance, cooperative-launch waits, barriers, host paths, placement. A method that starts at the transfer misattributes all of it.</li>
+<li><b>Attribution, not latency.</b> The output is an owner, reached by separating causes that share a signature, rather than a latency distribution. The same slowdown of the data plane had three owners in Figure 3.</li>
+<li><b>The observer is accounted for.</b> Clock drift, host mapping error and the perturbation by counter reads are measured and placed; the procedure prescribes where a read may happen.</li>
+<li><b>A stated limit.</b> The dark segment is a leaf, not a footnote, and the method says what hardware signal would remove it.</li>
+</ul>
+
+<p class="meta">Generated 2026-10-13 18:59 by the experiment's analysis script; raw data in results/.</p>
+</main></body></html>

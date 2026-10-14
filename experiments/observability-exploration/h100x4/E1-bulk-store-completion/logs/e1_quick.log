@@ -1,0 +1,129 @@
+lat src0->dst0 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst0 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst0 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst0 wait_group                    14464 B  p50      367 ns  p99      367 ns
+lat src0->dst0 wait_group                    65536 B  p50     1173 ns  p99     1173 ns
+lat src0->dst0 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst0 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst0 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst0 wait_group.read               14464 B  p50      361 ns  p99      361 ns
+lat src0->dst0 wait_group.read               65536 B  p50     1167 ns  p99     1167 ns
+lat src0->dst0 wait_group+fence.sys             16 B  p50     1777 ns  p99     1793 ns
+lat src0->dst0 wait_group+fence.sys            256 B  p50     1777 ns  p99     1791 ns
+lat src0->dst0 wait_group+fence.sys           4096 B  p50     1795 ns  p99     1967 ns
+lat src0->dst0 wait_group+fence.sys          14464 B  p50     1965 ns  p99     2096 ns
+lat src0->dst0 wait_group+fence.sys          65536 B  p50     2765 ns  p99     2952 ns
+lat src0->dst0 st.global x32 lanes+fence.sys     16 B  p50     1777 ns  p99     1810 ns
+lat src0->dst0 st.global x32 lanes+fence.sys    256 B  p50     1777 ns  p99     1801 ns
+lat src0->dst0 st.global x32 lanes+fence.sys   4096 B  p50     2193 ns  p99     2350 ns
+lat src0->dst0 st.global x32 lanes+fence.sys  14464 B  p50     3446 ns  p99     3498 ns
+lat src0->dst0 st.global x32 lanes+fence.sys  65536 B  p50     9375 ns  p99     9516 ns
+lat src0->dst1 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst1 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst1 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst1 wait_group                    14464 B  p50      372 ns  p99      372 ns
+lat src0->dst1 wait_group                    65536 B  p50     1379 ns  p99     1379 ns
+lat src0->dst1 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst1 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst1 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst1 wait_group.read               14464 B  p50      366 ns  p99      366 ns
+lat src0->dst1 wait_group.read               65536 B  p50     1373 ns  p99     1373 ns
+lat src0->dst1 wait_group+fence.sys             16 B  p50     1777 ns  p99     1836 ns
+lat src0->dst1 wait_group+fence.sys            256 B  p50     1777 ns  p99     1818 ns
+lat src0->dst1 wait_group+fence.sys           4096 B  p50     1794 ns  p99     1863 ns
+lat src0->dst1 wait_group+fence.sys          14464 B  p50     1975 ns  p99     2148 ns
+lat src0->dst1 wait_group+fence.sys          65536 B  p50     2972 ns  p99     3131 ns
+lat src0->dst1 st.global x32 lanes+fence.sys     16 B  p50     1777 ns  p99     1809 ns
+lat src0->dst1 st.global x32 lanes+fence.sys    256 B  p50     1777 ns  p99     1790 ns
+lat src0->dst1 st.global x32 lanes+fence.sys   4096 B  p50     2193 ns  p99     2355 ns
+lat src0->dst1 st.global x32 lanes+fence.sys  14464 B  p50     3448 ns  p99     3495 ns
+lat src0->dst1 st.global x32 lanes+fence.sys  65536 B  p50     9377 ns  p99     9529 ns
+lat src0->dst2 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst2 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst2 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst2 wait_group                    14464 B  p50      372 ns  p99      372 ns
+lat src0->dst2 wait_group                    65536 B  p50     1379 ns  p99     1379 ns
+lat src0->dst2 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst2 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst2 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst2 wait_group.read               14464 B  p50      366 ns  p99      366 ns
+lat src0->dst2 wait_group.read               65536 B  p50     1373 ns  p99     1373 ns
+lat src0->dst2 wait_group+fence.sys             16 B  p50     1777 ns  p99     1825 ns
+lat src0->dst2 wait_group+fence.sys            256 B  p50     1777 ns  p99     1832 ns
+lat src0->dst2 wait_group+fence.sys           4096 B  p50     1797 ns  p99     1970 ns
+lat src0->dst2 wait_group+fence.sys          14464 B  p50     1974 ns  p99     2119 ns
+lat src0->dst2 wait_group+fence.sys          65536 B  p50     2970 ns  p99     3111 ns
+lat src0->dst2 st.global x32 lanes+fence.sys     16 B  p50     1777 ns  p99     1792 ns
+lat src0->dst2 st.global x32 lanes+fence.sys    256 B  p50     1776 ns  p99     1815 ns
+lat src0->dst2 st.global x32 lanes+fence.sys   4096 B  p50     2193 ns  p99     2357 ns
+lat src0->dst2 st.global x32 lanes+fence.sys  14464 B  p50     3447 ns  p99     3492 ns
+lat src0->dst2 st.global x32 lanes+fence.sys  65536 B  p50     9375 ns  p99     9518 ns
+lat src0->dst3 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst3 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst3 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst3 wait_group                    14464 B  p50      372 ns  p99      372 ns
+lat src0->dst3 wait_group                    65536 B  p50     1379 ns  p99     1379 ns
+lat src0->dst3 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst3 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst3 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst3 wait_group.read               14464 B  p50      366 ns  p99      366 ns
+lat src0->dst3 wait_group.read               65536 B  p50     1373 ns  p99     1373 ns
+lat src0->dst3 wait_group+fence.sys             16 B  p50     1777 ns  p99     1840 ns
+lat src0->dst3 wait_group+fence.sys            256 B  p50     1776 ns  p99     1839 ns
+lat src0->dst3 wait_group+fence.sys           4096 B  p50     1796 ns  p99     1951 ns
+lat src0->dst3 wait_group+fence.sys          14464 B  p50     1972 ns  p99     2162 ns
+lat src0->dst3 wait_group+fence.sys          65536 B  p50     2971 ns  p99     3124 ns
+lat src0->dst3 st.global x32 lanes+fence.sys     16 B  p50     1776 ns  p99     1830 ns
+lat src0->dst3 st.global x32 lanes+fence.sys    256 B  p50     1776 ns  p99     1794 ns
+lat src0->dst3 st.global x32 lanes+fence.sys   4096 B  p50     2193 ns  p99     2379 ns
+lat src0->dst3 st.global x32 lanes+fence.sys  14464 B  p50     3445 ns  p99     3495 ns
+lat src0->dst3 st.global x32 lanes+fence.sys  65536 B  p50     9375 ns  p99     9502 ns
+conc 1 SM x  1 warps  p50      372 ns  p99      372 ns  => 38.9 GB/s per SM
+conc 1 SM x  4 warps  p50      976 ns  p99      976 ns  => 59.3 GB/s per SM
+conc 1 SM x  8 warps  p50     2124 ns  p99     2125 ns  => 54.5 GB/s per SM
+conc 1 SM x 15 warps  p50     4117 ns  p99     4408 ns  => 58.4 GB/s per SM
+conc  1 SMs x 15 warps  p50     4117 ns  p99     4408 ns  => 58.4 GB/s
+conc  2 SMs x 15 warps  p50     3996 ns  p99     4425 ns  => 116.4 GB/s
+conc  4 SMs x 15 warps  p50     3996 ns  p99     4431 ns  => 233.2 GB/s
+conc  8 SMs x 15 warps  p50     4139 ns  p99     6749 ns  => 434.8 GB/s
+conc 16 SMs x 15 warps  p50     4117 ns  p99     8027 ns  => 828.2 GB/s
+issue src0->dst0   1024 B: base gap    110 ns, knee at None, all 512 done at     58.4 us
+issue src0->dst0   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst0   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst0  14464 B: base gap    112 ns, knee at None, all 512 done at    117.9 us
+issue src0->dst0  14464 B: base gap    112 ns, knee at None, all 512 done at    117.9 us
+issue src0->dst0  14464 B: base gap    112 ns, knee at None, all 512 done at    117.9 us
+issue src0->dst0  65536 B: base gap    408 ns, knee at None, all 512 done at    530.7 us
+issue src0->dst0  65536 B: base gap    408 ns, knee at None, all 512 done at    530.7 us
+issue src0->dst0  65536 B: base gap    408 ns, knee at None, all 512 done at    530.7 us
+issue src0->dst1   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst1   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst1   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst1  14464 B: base gap    112 ns, knee at None, all 512 done at    146.8 us
+issue src0->dst1  14464 B: base gap    112 ns, knee at None, all 512 done at    146.8 us
+issue src0->dst1  14464 B: base gap    112 ns, knee at None, all 512 done at    146.8 us
+issue src0->dst1  65536 B: base gap    507 ns, knee at None, all 512 done at    662.8 us
+issue src0->dst1  65536 B: base gap    507 ns, knee at None, all 512 done at    662.8 us
+issue src0->dst1  65536 B: base gap    507 ns, knee at None, all 512 done at    662.8 us
+pingpong 0<->1: RTT p50   1312 ns p99   1472 ns | offset(b-a) 2038922112 ns +-     25
+pingpong 0<->2: RTT p50   1440 ns p99   1600 ns | offset(b-a) -1344834816 ns +-     23
+pingpong 0<->3: RTT p50   1312 ns p99   1504 ns | offset(b-a)  876206080 ns +-     32
+pingpong 1<->0: RTT p50   1312 ns p99   1440 ns | offset(b-a) -2038922112 ns +-     25
+pingpong 1<->2: RTT p50   1312 ns p99   1440 ns | offset(b-a) -3383757056 ns +-     45
+pingpong 1<->3: RTT p50   1248 ns p99   1344 ns | offset(b-a) -1162716032 ns +-     44
+pingpong 2<->0: RTT p50   1472 ns p99   1536 ns | offset(b-a) 1344834816 ns +-     62
+pingpong 2<->1: RTT p50   1344 ns p99   1408 ns | offset(b-a) 3383757056 ns +-      0
+pingpong 2<->3: RTT p50   1344 ns p99   1504 ns | offset(b-a) 2221041152 ns +-    124
+pingpong 3<->0: RTT p50   1344 ns p99   1504 ns | offset(b-a) -876206144 ns +-     37
+pingpong 3<->1: RTT p50   1152 ns p99   1312 ns | offset(b-a) 1162716160 ns +-     54
+pingpong 3<->2: RTT p50   1312 ns p99   1504 ns | offset(b-a) -2221041152 ns +-     75
+visibility wait_group                     4096 B: rounds with stale data 57/2000  max stale chunks 240/256
+visibility wait_group                    14464 B: rounds with stale data 25/2000  max stale chunks 224/904
+visibility wait_group                    65536 B: rounds with stale data 0/2000  max stale chunks 0/4096
+visibility wait_group.read                4096 B: rounds with stale data 0/2000  max stale chunks 0/256
+visibility wait_group.read               14464 B: rounds with stale data 0/2000  max stale chunks 0/904
+visibility wait_group.read               65536 B: rounds with stale data 0/2000  max stale chunks 0/4096
+visibility wait_group+fence.sys           4096 B: rounds with stale data 0/2000  max stale chunks 0/256
+visibility wait_group+fence.sys          14464 B: rounds with stale data 0/2000  max stale chunks 0/904
+visibility wait_group+fence.sys          65536 B: rounds with stale data 0/2000  max stale chunks 0/4096
+saved /root/DeepEP/experiments/observability-exploration/E1-bulk-store-completion/results/e1_results.json

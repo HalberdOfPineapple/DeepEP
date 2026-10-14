@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepEP Fabric Degradations</title>
+<meta name="description" content="What can degrade DeepEP's NVLink/GIN communication while it runs, what symptom each failure shows, where today's tools stop, what information is missing, and the experiments that would validate each claim on an 8×H100 node.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  --bg: #F5F6F8; --surface: #FFFFFF; --surface-2: #ECEFF3; --ink: #17202A; --muted: #5A6572;
+  --line: #D5DBE2; --accent: #2B59C3; --accent-soft: #E3EAFA;
+  --ok: #11806E; --ok-soft: #DDF2EE; --warn: #B0620B; --warn-soft: #FBEBD8;
+  --bad: #B42A2A; --bad-soft: #F9E1E1; --type: #7446B5; --type-soft: #EDE5F8; --code-bg: #EEF1F5;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0E1318; --surface: #151C23; --surface-2: #1C252F; --ink: #E3E8EE; --muted: #97A2AE;
+    --line: #2B3541; --accent: #8AABFF; --accent-soft: #1D2A48;
+    --ok: #4FC8B2; --ok-soft: #123330; --warn: #E8A650; --warn-soft: #3A2A14;
+    --bad: #F08A8A; --bad-soft: #3D1B1B; --type: #C4A7F4; --type-soft: #2A2040; --code-bg: #111920;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0E1318; --surface: #151C23; --surface-2: #1C252F; --ink: #E3E8EE; --muted: #97A2AE;
+  --line: #2B3541; --accent: #8AABFF; --accent-soft: #1D2A48;
+  --ok: #4FC8B2; --ok-soft: #123330; --warn: #E8A650; --warn-soft: #3A2A14;
+  --bad: #F08A8A; --bad-soft: #3D1B1B; --type: #C4A7F4; --type-soft: #2A2040; --code-bg: #111920;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.6; margin: 0; padding: 0 16px 64px; }
+.layout { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 240px minmax(0,1fr); gap: 48px; }
+@media (max-width: 960px) { .layout { grid-template-columns: minmax(0,1fr); gap: 0; } }
+nav.toc { position: sticky; top: 0; align-self: start; padding: 40px 0 24px; font-size: 14px; max-height: 100vh; overflow: auto; }
+nav.toc .label { font-family: var(--font-head); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { display: grid; grid-template-columns: 34px 1fr; gap: 4px; padding: 5px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+nav.toc a:hover { background: var(--surface-2); }
+nav.toc a .n { font-family: var(--font-mono); color: var(--muted); font-size: 12px; padding-top: 2px; }
+@media (max-width: 960px) { nav.toc { position: static; padding: 24px 0 0; max-height: none; } nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); } }
+main { min-width: 0; padding-top: 40px; }
+.col { max-width: 880px; }
+h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; text-wrap: balance; }
+h1 { font-size: clamp(32px,5vw,46px); font-weight: 700; margin: 0 0 12px; letter-spacing: -.01em; }
+h2 { font-size: 28px; font-weight: 700; margin: 56px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 20px; font-weight: 600; margin: 34px 0 8px; }
+h4 { font-size: 15px; font-weight: 600; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+p { margin: 0 0 14px; }
+.lede { font-size: 18px; color: var(--muted); }
+.meta { font-size: 13px; color: var(--muted); font-family: var(--font-mono); margin-bottom: 28px; }
+code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { font-family: var(--font-mono); font-size: 13px; background: var(--code-bg); padding: 12px 14px; border-radius: 8px; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+a { color: var(--accent); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 14px 0 20px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--font-head); font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin: 16px 0 22px; }
+.callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+.rq { border-left: 4px solid var(--type); background: var(--type-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+.rq b { color: var(--type); }
+.warnbox { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); margin-right: 4px; white-space: nowrap; }
+.tag.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.tag.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.tag.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.tag.acc { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+figure { margin: 18px 0 24px; }
+figure svg { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
+svg text { font-family: var(--font-body); font-size: 12px; fill: var(--ink); }
+svg .mono { font-family: var(--font-mono); font-size: 11px; }
+svg .small { font-size: 10.5px; fill: var(--muted); }
+svg .head { font-family: var(--font-head); font-size: 13px; font-weight: 600; }
+svg .box { fill: var(--surface-2); stroke: var(--line); }
+svg .box-ok { fill: var(--ok-soft); stroke: var(--ok); }
+svg .box-warn { fill: var(--warn-soft); stroke: var(--warn); }
+svg .box-bad { fill: var(--bad-soft); stroke: var(--bad); }
+svg .box-acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .box-type { fill: var(--type-soft); stroke: var(--type); }
+svg .ln { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+svg .ln-acc { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+svg .ln-warn { stroke: var(--warn); stroke-width: 1.6; fill: none; }
+svg .ln-bad { stroke: var(--bad); stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+svg .ln-mut { stroke: var(--muted); stroke-width: 1; fill: none; stroke-dasharray: 3 3; }
+svg .fill-acc { fill: var(--accent); } svg .fill-warn { fill: var(--warn); } svg .fill-bad { fill: var(--bad); } svg .fill-ok { fill: var(--ok); } svg .fill-mut { fill: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 14px; margin: 14px 0 20px; }
+.gap { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.gap .k { font-family: var(--font-head); font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+.gap .k span { color: var(--muted); font-family: var(--font-mono); font-size: 12px; margin-right: 6px; }
+ul, ol { padding-left: 22px; } li { margin-bottom: 6px; }
+.prob { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px 6px; margin: 18px 0 26px; }
+.prob h3 { margin-top: 0; }
+.prob .row { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.prob .row .k { font-family: var(--font-head); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-top: 2px; }
+.prob .row p:last-child { margin-bottom: 0; }
+@media (max-width: 640px) { .prob .row { grid-template-columns: minmax(0,1fr); gap: 4px; } }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 14px; margin: 8px 0 14px; }
+.kv .k { color: var(--muted); font-family: var(--font-mono); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <div class="label">Contents</div>
+  <ol>
+    <li><a href="#frame"><span class="n">★</span><span>The frame: target, phases</span></a></li>
+    <li><a href="#s0"><span class="n">0</span><span>Short version</span></a></li>
+    <li><a href="#s1"><span class="n">1</span><span>Dispatch as memory traffic</span></a></li>
+    <li><a href="#s2"><span class="n">2</span><span>Degradation catalogue</span></a></li>
+    <li><a href="#p1"><span class="n">P1</span><span>Incast and victim flows</span></a></li>
+    <li><a href="#p2"><span class="n">P2</span><span>The one-token window</span></a></li>
+    <li><a href="#p3"><span class="n">P3</span><span>Address hot spots</span></a></li>
+    <li><a href="#p4"><span class="n">P4</span><span>Control behind data</span></a></li>
+    <li><a href="#p5"><span class="n">P5</span><span>Skew, barriers, tails</span></a></li>
+    <li><a href="#p6"><span class="n">P6</span><span>Compute interference</span></a></li>
+    <li><a href="#p7"><span class="n">P7</span><span>Concurrent comm kernels</span></a></li>
+    <li><a href="#p8"><span class="n">P8</span><span>Decode: latency regime</span></a></li>
+    <li><a href="#p9"><span class="n">P9</span><span>Links, paths, GIN</span></a></li>
+    <li><a href="#s3"><span class="n">3</span><span>Observability challenges</span></a></li>
+    <li><a href="#s4"><span class="n">4</span><span>Experiment programme</span></a></li>
+    <li><a href="#s5"><span class="n">5</span><span>What a tool must provide</span></a></li>
+    <li><a href="#s6"><span class="n">A</span><span>Numbers used</span></a></li>
+  </ol>
+</nav>
+<main><div class="col">
+
+<h1>DeepEP on the Wire: Degradations, Blind Spots and the Experiments That Would Expose Them</h1>
+<p class="lede">DeepEP dispatch is the most demanding memory-semantic workload a single GPU node runs today: 240 warps per GPU issuing 14 KB bulk stores into seven peers' memories, a control plane of 8-byte stores and atomics, two cross-GPU barriers, and a CPU spinning on a mailbox, all inside one cooperative kernel that is meant to overlap with GEMMs. This page asks what can go wrong on the fabric while that runs, what each problem looks like from today's tools, why they stop there, and what measurement would get to the cause.</p>
+<div class="meta">Basis: DeepEP V2.5 @ 93eb6eb (dispatch.cuh, combine.cuh, hybrid_dispatch.cuh, comm/barrier.cuh, comm/handle.cuh, layout/ep/workspace.cuh) · FabricPerf (Huang &amp; Wu, SIGCOMM '26) · companion notes: deepep-dispatch.html, observability-gaps-memory-semantic-fabrics.html · target machine: 8 × H100 SXM, NV18 to 4 NVSwitch chips · 2026-10-12. Nothing on this page was measured yet; every number is derived from the code or quoted from the paper, and every claim about hardware behaviour is a hypothesis with its experiment next to it.</div>
+
+
+<div class="card" id="status">
+<p><b>Status after running E1, E0, E2, E3 and E4 on GPUs 4–7 (2026-10-12).</b> Reports with data, diagrams and scripts: <a href="../experiments/observability-exploration/index.html">experiments/observability-exploration/index.html</a>. What the measurements changed in this page:</p>
+<ul>
+<li><b>C2 answered, P2 withdrawn as written.</b> <code>cp.async.bulk.wait_group</code> returns on local acceptance (150–400 ns, the same for a local and a peer destination); only a system-scope release waits for the peer (~1.8 µs ≈ the 1.2–1.4 µs round trip). The window is the per-lane async-proxy queue (~7 stores, drained at ~50 GB/s per SM), and back-pressure lands on the <code>cp.async.bulk</code> instruction itself. Dispatch throughput is min(~33 GB/s per SM remote, ~285 GB/s per GPU) at four ranks; half of a warp's 17 µs iteration is store-issue stall on an idle fabric. Figure P2 and the "window closes at 45 µs" argument are superseded by the E0 report.</li>
+<li><b>P1 sharpened.</b> Under incast the hot rank's intake caps near 320 GB/s and every sender's per-destination latency is identical for hot and idle destinations: the per-SM store FIFO is shared across destinations, so a receiver bottleneck slows all of a sender's traffic uniformly and idle destinations' stores stretch over the whole kernel. The <code>wait_group.read</code> variant changes nothing. Figure P1's panel A is cheap; its panel B happens upstream of the link, in the SM.</li>
+<li><b>P3 downgraded</b> at four ranks: slot atomics complete in 96 ns whether or not the counters share a line.</li>
+<li><b>P4 measured, and it is the incast case that matters.</b> An 8-byte count store crosses in ~1.8 µs on a quiet fabric; with a balanced data plane its p50 stays at 2.3 µs while the p99 reaches 18 µs; under incast (ratio 4) the p50 is 31 µs and the p99 70 µs, and the receiver's wait for all peers' counts grows to 33 µs, because SM 0's count stores sit in the same per-SM FIFO as the dispatch warps' data stores to the hot rank. Relocating the receive array by 4 MiB changes nothing: the address does not select a path.</li>
+<li><b>Clock synchronisation corrected.</b> A ping-pong calibration closes triangles to ~100 ns, but the GPUs' <code>%globaltimer</code> clocks drift by milliseconds per hour relative to each other; calibration must bracket each measured kernel (≈12 ms for four ranks), not "once per session" as §4.2 says.</li>
+<li><b>Instrumentation validated:</b> per-lane trace at 0.1–1 % overhead through an existing kernel argument, no shared memory used. A warp-wide ballot inside a lane branch deadlocks the kernel; see common/README.md.</li>
+</ul>
+<p><b>After E5–E9 (2026-10-13, GPUs 4–7):</b> E6: a delayed rank costs its peers the delay minus an 85 µs launch allowance, and the aligned stamps name the rank; host stamps separate a busy GPU from a slow host. E5: HBM-bound neighbours stretch the token load ×1.6 and the store path ×1.3 on the loaded sender, a loaded receiver does not slow stores into it, and the cooperative launch waits 1–2 ms behind even short background kernels. E7: the warp tail is set by the physical TPC each block lands on (fixed levels 1.0 : 1.2 : 1.4 per GPU, R² 88 %), not by the warps' work (R² 1 %). E8: a concurrent combine costs under 10 %, a concurrent NCCL all-to-all doubles the data plane with the same stamp signature as self-saturation; an NVML counter read before launch perturbs the kernel by 20 %. E9: the 128-token decode call is 142 µs, of which the kernel is 43 and the host path 100. Reports: experiments/observability-exploration/h100x4/.</p></div>
+
+<h2 id="frame">The frame: target, phases, attribution</h2>
+<p class="lede">Read this section first. Everything below it (the nine problems, the ten challenges, the experiments) is an instance of one of the cells in the table at the end of this section.</p>
+
+<h3>The target</h3>
+<p><b>For every dispatch or combine that ran slower than it should have, say which phase absorbed the extra time, at which point along the path, and from which cause, using signals cheap enough to stay on in production.</b> The output is a per-kernel time decomposition with a cause attached to each excess. "Observability" here means the set of signals plus the rules that turn them into that decomposition. The research question is where that decomposition is impossible with the signals that exist, and what minimal new signal (a hardware counter, a library hook, a protocol change) would close each hole.</p>
+<p>Three attributions are wanted, in increasing order of difficulty:</p>
+<ol>
+<li><b>Phase:</b> which of the six phases below the time went to. Answerable on one rank with in-kernel timestamps.</li>
+<li><b>Location:</b> for the transfer phase, where along sender SM → sender egress → switch → receiver ingress → receiver memory the bytes waited. Partly answerable from the sender, dark in the middle.</li>
+<li><b>Cause:</b> whether the excess came from this kernel's own routing (incast), from its own SM/link ratio, from a peer that was late, from compute running beside it, or from another job on the same links. Needs the phase decomposition on <em>every</em> rank on one clock, plus counters outside the kernel.</li>
+</ol>
+
+<h3>The phases</h3>
+<figure>
+<svg viewBox="0 0 880 428" role="img" aria-label="Six phases of one dispatch on one rank, with who can timestamp each and which are dark; below, the path of one bulk store through the sender SM, the link and the receiver, with the point where the sender's visibility ends">
+  <defs><marker id="fa" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker></defs>
+  <text x="20" y="24" class="head">One dispatch on one rank, in time</text>
+  <rect x="20" y="36" width="95" height="60" rx="8" class="box-ok"/><text x="67" y="56" text-anchor="middle" class="head">A · sync in</text><text x="67" y="72" text-anchor="middle" class="small">launch, opening</text><text x="67" y="86" text-anchor="middle" class="small">barrier</text>
+  <rect x="123" y="36" width="140" height="60" rx="8" class="box-ok"/><text x="193" y="56" text-anchor="middle" class="head">B · counts</text><text x="193" y="72" text-anchor="middle" class="small">8 B stores to peers,</text><text x="193" y="86" text-anchor="middle" class="small">wait for theirs</text>
+  <rect x="271" y="36" width="245" height="60" rx="8" class="box-ok"/><text x="393" y="56" text-anchor="middle" class="head">C · per-token loop (240 warps)</text><text x="393" y="72" text-anchor="middle" class="small">C1 slot wait · C2 prepare (load, top-k, atomic)</text><text x="393" y="86" text-anchor="middle" class="small">C3 issue bulk stores</text>
+  <rect x="524" y="36" width="112" height="60" rx="8" class="box-bad"/><text x="580" y="56" text-anchor="middle" class="head">D · transfer</text><text x="580" y="72" text-anchor="middle" class="small">SM queue → link →</text><text x="580" y="86" text-anchor="middle" class="small">peer memory</text>
+  <rect x="644" y="36" width="122" height="60" rx="8" class="box-ok"/><text x="705" y="56" text-anchor="middle" class="head">E · sync out</text><text x="705" y="72" text-anchor="middle" class="small">warp tail, drain,</text><text x="705" y="86" text-anchor="middle" class="small">closing barrier</text>
+  <rect x="774" y="36" width="95" height="60" rx="8" class="box-ok"/><text x="821" y="56" text-anchor="middle" class="head">F · hand-off</text><text x="821" y="72" text-anchor="middle" class="small">epilogue,</text><text x="821" y="86" text-anchor="middle" class="small">host</text>
+  <path d="M393 96 L393 108 L580 108 L580 96" class="ln-mut"/><text x="486" y="122" text-anchor="middle" class="small">B, C and D overlap in time; D is not a step the warp executes, it is what happens to the bytes after C3</text>
+
+  <text x="20" y="152" class="head">Who can timestamp it</text>
+  <rect x="20" y="162" width="95" height="36" rx="6" class="box-ok"/><text x="67" y="184" text-anchor="middle" class="small">SM 0 stamps</text>
+  <rect x="123" y="162" width="140" height="36" rx="6" class="box-warn"/><text x="193" y="178" text-anchor="middle" class="small">sender and receiver</text><text x="193" y="192" text-anchor="middle" class="small">stamps; needs clocks</text>
+  <rect x="271" y="162" width="245" height="36" rx="6" class="box-ok"/><text x="393" y="178" text-anchor="middle" class="small">warps stamp C1, C2, C3 boundaries;</text><text x="393" y="192" text-anchor="middle" class="small">lanes stamp store issue and acceptance</text>
+  <rect x="524" y="162" width="112" height="36" rx="6" class="box-bad"/><text x="580" y="178" text-anchor="middle" class="small">no software event</text><text x="580" y="192" text-anchor="middle" class="small">at any point inside</text>
+  <rect x="644" y="162" width="122" height="36" rx="6" class="box-warn"/><text x="705" y="178" text-anchor="middle" class="small">SM 0 stamps; who</text><text x="705" y="192" text-anchor="middle" class="small">was last needs clocks</text>
+  <rect x="774" y="162" width="95" height="36" rx="6" class="box-ok"/><text x="821" y="184" text-anchor="middle" class="small">stamps</text>
+
+  <text x="20" y="236" class="head">Phase D, the path of one 14 KB store, and where the sender's visibility ends</text>
+  <rect x="20" y="250" width="120" height="44" rx="6" class="box-ok"/><text x="80" y="268" text-anchor="middle" class="small">sender SM</text><text x="80" y="283" text-anchor="middle" class="small">async-proxy queue</text>
+  <rect x="160" y="250" width="100" height="44" rx="6" class="box-ok"/><text x="210" y="268" text-anchor="middle" class="small">sender L2 /</text><text x="210" y="283" text-anchor="middle" class="small">crossbar</text>
+  <rect x="280" y="250" width="110" height="44" rx="6" class="box-bad"/><text x="335" y="268" text-anchor="middle" class="small">NVLink port</text><text x="335" y="283" text-anchor="middle" class="small">(egress)</text>
+  <rect x="410" y="250" width="110" height="44" rx="6" class="box-bad"/><text x="465" y="268" text-anchor="middle" class="small">NVSwitch</text><text x="465" y="283" text-anchor="middle" class="small">shared with others</text>
+  <rect x="540" y="250" width="110" height="44" rx="6" class="box-bad"/><text x="595" y="268" text-anchor="middle" class="small">peer port</text><text x="595" y="283" text-anchor="middle" class="small">(ingress)</text>
+  <rect x="670" y="250" width="100" height="44" rx="6" class="box-bad"/><text x="720" y="268" text-anchor="middle" class="small">peer L2 /</text><text x="720" y="283" text-anchor="middle" class="small">HBM</text>
+  <rect x="790" y="250" width="75" height="44" rx="6" class="box-warn"/><text x="827" y="268" text-anchor="middle" class="small">peer sees it</text><text x="827" y="283" text-anchor="middle" class="small">at barrier</text>
+  <path d="M140 272 L160 272 M260 272 L280 272 M390 272 L410 272 M520 272 L540 272 M650 272 L670 272 M770 272 L790 272" class="ln-mut" marker-end="url(#fa)"/>
+  <path d="M265 240 L265 304" class="ln-bad"/><text x="272" y="318" class="small">wait_group returns here (E1): everything to the right is dark to the sender</text>
+  <text x="20" y="318" class="small">issue stall = queue full (E0)</text>
+  <path d="M20 338 L865 338" class="ln-mut"/>
+  <text x="20" y="358" class="small">Still inferable about the dark part: aggregate intake per destination from receiver-side stamps at the barrier (E2); one round trip per kernel from the release at E;</text>
+  <text x="20" y="374" class="small">per-link byte counters from NVML at about 1 ms resolution. Not inferable: where a given store waited, whether a peer's port or the switch was the</text>
+  <text x="20" y="390" class="small">bottleneck, whether another job's traffic was there.</text>
+  <text x="20" y="412" class="small">Green: stampable inside the kernel at about 1 % cost. Amber: stampable, but attribution needs clocks aligned across GPUs. Red: no software event exists.</text>
+</svg>
+<figcaption>Figure 0. The phases of one dispatch and the path of one store. The decomposition problem is green on one rank, amber across ranks, and red inside the transfer.</figcaption>
+</figure>
+
+<h3>What is attributable today, per phase</h3>
+<table>
+<thead><tr><th>Phase</th><th>What the excess time means</th><th>Signal that attributes it</th><th>Status</th><th>Where the catalogue below fits</th></tr></thead>
+<tbody>
+<tr><td><b>A · sync in</b></td><td>a peer launched late (compute skew before the kernel), or a peer's previous kernel ran long, or its cooperative launch waited for SMs</td><td>opening-barrier arrive/release stamps on every rank, aligned clocks → which rank arrived last and by how much; host call stamp → GPU-side or host-side cause</td><td><span class="tag ok">measured</span> E6: delay recovered 1:1 beyond an 85 µs launch allowance; E5: launch waits 1–2 ms beside compute; E9: host call → entry 63 µs</td><td>P5, P6, P8; E5, E6, E9</td></tr>
+<tr><td><b>B · counts</b></td><td>the 8-byte count stores queued behind data, or a peer's counts were late</td><td>per-store one-way latency (send stamp, receive stamp, offset)</td><td><span class="tag ok">measured</span> 1.8 µs quiet, p99 18 µs under data, 70 µs under incast (E4)</td><td>P4; E4</td></tr>
+<tr><td><b>C1 · slot wait</b></td><td>the previous token's stores had not been accepted by the SM's queue: the queue towards the link is full</td><td>per-warp stamp pair; grows from 3.7 to 9.7 µs p50 when the link saturates (E0)</td><td><span class="tag ok">measured</span></td><td>P2 (corrected); E0, E2</td></tr>
+<tr><td><b>C2 · prepare</b></td><td>local HBM load, top-k loads, or the slot atomic on the shared counter line</td><td>per-warp stamps; atomic latency per lane</td><td><span class="tag ok">measured</span> atomics 96 ns regardless of layout (E3); token load ×1.6 beside HBM-bound compute (E5)</td><td>P3, P6; E3, E5</td></tr>
+<tr><td><b>C3 · issue</b></td><td>the store instruction itself stalls: the per-lane queue (≈7 stores) is full; either the SM's own drain rate or link back-pressure</td><td>load-done → stores-issued stamp; 8.7 µs of a 17 µs iteration even on an idle fabric (E0)</td><td><span class="tag ok">measured</span> SM rate vs link told apart by sweeping SM count</td><td>P2 (corrected); E0</td></tr>
+<tr><td><b>D · transfer</b></td><td>bytes waited at the egress port, in the switch, at the peer's ingress, or at the peer's memory</td><td>none per store. Inferable: hot-destination intake rate (E2), a release round trip once per kernel (E1), NVML link counters per kernel (E8). One location is now attributable: the sender's physical TPC, whose drain rate differs 1.0 : 1.2 : 1.4 and sets the warp tail (E7, one %smid read per warp)</td><td><span class="tag bad">dark</span> beyond the SM: a foreign kernel on the links doubles the data plane with the same stamp signature as self-saturation (E8); the NVML read that would attribute it perturbs the kernel by 20 %</td><td>P1, P7, P9; C1, C2, C4; E2, E7, E8, E10, E11</td></tr>
+<tr><td><b>E · sync out</b></td><td>this rank's warps finished unevenly (tail), its last stores were still draining, or a peer was slower</td><td>per-warp finish stamps (tail: 240 µs of 540 µs at 16 SMs, E0); closing-barrier arrive/release on every rank with aligned clocks → slowest rank</td><td><span class="tag ok">measured</span> the tail is set by the physical TPC each block landed on, not by the warps' work (E7, R² 88 % vs 1 %); peer attribution with aligned clocks shown in E6</td><td>P5; E0, E6, E7</td></tr>
+<tr><td><b>F · hand-off</b></td><td>the epilogue copy, the host mailbox poll</td><td>stamps, CPU timestamps</td><td><span class="tag ok">measured</span> 37 µs of a 142 µs decode call (E9)</td><td>P8; E9</td></tr>
+</tbody>
+</table>
+<p><b>So the direct answer to "can we attribute a symptom to a phase":</b> on one rank, yes, for A, B, C, E and F, with in-kernel stamps costing about 1 % (built and used in E0–E9, including the host path in E6 and E9). Across ranks, yes for A, B and E once the clocks are aligned around each kernel (E4 showed how, and that a one-off calibration is not enough; E6 recovers an injected delay 1:1). Inside D, mostly no: the sender's visibility ends when its SM's queue accepts the store, and the receiver has no per-store event at all. The one exception found so far is at the very start of D: the drain rate of the sender's own TPC, which E7 showed to be a fixed per-TPC property that sets the whole warp tail. What a sender can say about D is only "my queue towards the link was draining slowly", which cannot distinguish its own egress, the switch, the peer's ingress, or a foreign job. That is the hole every "problem" in section 2 that involves the fabric (P1, P7, P9) falls into, and the one the tooling research has to fill with something outside the kernel: a per-destination completion counter in the memory system, timestamped port counters, or a receiver-side arrival event.</p>
+<p><b>The three mechanisms of degradation, in this frame.</b> Everything in section 2 is one of: (i) <em>more time in C1/C3</em> because the SM's queue drains slower (the link is saturated, by this kernel's own fan-out, by incast on one destination, by a sibling kernel or by a foreign job); (ii) <em>more time in A/E</em> because some rank was later than the others (compute skew, a slower peer, a long tail); (iii) <em>more time in B</em> because small control stores share the queue with the data. Mechanism (i) is visible as a symptom but not attributable to a location; (ii) is attributable with aligned clocks; (iii) is measurable with two stamps and aligned clocks.</p>
+
+<h2 id="s0">0. The short version</h2>
+<ul>
+  <li><b>DeepEP has no data-plane "packet" and no receiver-side arrival event at all.</b> Tokens are moved by <code>cp.async.bulk</code> stores from shared memory straight into a peer's buffer, with no flag, no fence, and no poll on the receiving side. The receiver learns that data exists only at the closing barrier, hundreds of microseconds later. FabricPerf's T1 to T5 cannot be attached anywhere on this path. The only per-token event that exists is on the <em>sender</em>: the <code>cp.async.bulk.wait_group</code> each lane executes before its warp reuses its staging slot.</li>
+  <li><b>That wait is not a round trip, and the real limit is the SM's store queue</b> (measured in E1 and E0; the original claim here, "one token per warp per round trip", is withdrawn). <code>wait_group</code> returns once the SM's copy engine has accepted the store, a few hundred ns, whether the destination is local or a peer. A warp is held back by the per-lane queue of about seven bulk stores, drained at about 50 GB/s per SM; back-pressure from a saturated link shows first as a stall on the store instruction and then as longer slot waits. Throughput is min(per-SM drain × SMs, about 285 GB/s per GPU at four ranks).</li>
+  <li><b>The good news hidden in the code:</b> stores and waits are per lane, and lane <em>k</em> talks to exactly one destination. Timestamping around each lane's wait yields issue-to-completion latency per (source, destination, token, bytes) on a single clock, with no second GPU, no clock sync and no extra traffic. It is the memory-semantic analogue of a NIC completion queue, and it is the one sensor this workload gives for free, provided the semantics of "complete" for a remote bulk store are first calibrated.</li>
+  <li><b>Contention in DeepEP is decided by addresses, not channels:</b> eight slot counters in one 32-byte sector receive about 21,000 returning atomics per dispatch per GPU; every rank's barrier adds land in one 16-byte word of the receiver; 264 control-plane stores per rank pair compete for the same links as 270 MB of bulk data. None of these is visible as more than "the kernel took longer".</li>
+  <li><b>Local symptom, remote cause.</b> Two grid-wide syncs and two NVLink barriers per dispatch mean that a slow destination, a late launch, or a straggling warp on one rank appears on every other rank as barrier time. Attributing it needs a cross-rank timeline. On one node the GPU clocks are stable enough to build one with a single calibration; across nodes, with GIN, they are not.</li>
+  <li><b>Nine problems, nine experiments.</b> Section 2 gives mechanism, symptom, dead end, missing information and validation for each. Section 4 orders them into a programme that runs on this 8×H100 node with a small instrumentation patch and the generators DeepEP already ships, including the unbalanced-gate generator that makes incast reproducible.</li>
+</ul>
+
+<h2 id="s1">1. Dispatch, reduced to its memory operations</h2>
+<p>The companion page explains the kernel line by line; this section keeps only what the fabric sees. One dispatch on one GPU in the running configuration (8 ranks, 4,096 tokens per rank, top-8 of 256 experts, BF16, 16 SMs, 4 notify warps + 15 dispatch warps per SM) issues the following remote and contended operations.</p>
+
+<table>
+<thead><tr><th>Operation</th><th>Instruction</th><th>Issuer</th><th>Count per dispatch per GPU</th><th>Target address</th><th>Completion or arrival event available to software</th></tr></thead>
+<tbody>
+<tr><td>Opening barrier arrive</td><td><code>red.release.sys.global.add.s32</code></td><td>SM 0, threads 0–7</td><td>8 (one per peer, incl. self)</td><td>peer's <code>barrier_signals</code>, bytes 8–15 of its window; 8 senders into one 4-byte word</td><td><span class="tag ok">yes</span> receiver's <code>ld.acquire.sys</code> poll sees the count reach 8; no per-sender event</td></tr>
+<tr><td>Notify reduction</td><td><code>red.gpu.global.add.u64</code></td><td>128 notify threads on every SM</td><td>264 × 16 SMs (local)</td><td>own <code>notify_reduction[0..263]</code>, one 64-bit word each, 16 adds per word</td><td><span class="tag ok">yes</span> SM 0 polls with <code>ld.volatile</code> until the high half reads 16</td></tr>
+<tr><td>Count stores to peers</td><td><code>st.relaxed.sys.global.u64</code></td><td>SM 0 notify threads</td><td>264 (8 rank counts + 256 expert counts), 33 per peer</td><td>peer's receive array, 8 bytes each, −v−1 encoded</td><td><span class="tag ok">yes</span> receiver SM 0 polls 264 slots with <code>ld.volatile</code>; resolution = poll period</td></tr>
+<tr><td>Slot allocation</td><td><code>atom.global.add.u32</code> (returning)</td><td>one lane per (token, destination) in 240 dispatch warps</td><td>≈ 21,700 (4,096 tokens × 5.29 unique ranks)</td><td>own <code>scaleup_atomic_sender_count[8]</code>: 8 ints, 32 bytes, one L2 sector/line</td><td><span class="tag ok">yes</span> the returned value; its latency is measurable in the issuing lane</td></tr>
+<tr><td>Token load</td><td><code>cp.async.bulk</code> global→shared, <code>L2::evict_first</code></td><td>one lane per warp</td><td>4,096 × 14,336 B from <code>x</code></td><td>local HBM / L2</td><td><span class="tag ok">yes</span> mbarrier <code>complete_tx</code></td></tr>
+<tr><td><b>Token store</b></td><td><code>cp.async.bulk.global.shared::cta.bulk_group</code>, <code>L2::evict_normal</code></td><td>one lane per (token, destination)</td><td>≈ 21,700 stores × 14,464 B ≈ 314 MB, of which ≈ 274 MB cross NVLink</td><td>peer's receive row for this source, dense slots; VA from <code>ncclGetLsaPointer</code></td><td><span class="tag warn">sender only</span> <code>cp.async.bulk.wait_group 0</code> per lane; <span class="tag bad">receiver: none</span> until the closing barrier</td></tr>
+<tr><td>Closing barrier</td><td><code>wait_group</code> + grid sync + <code>red.release.sys</code> + <code>ld.acquire.sys</code></td><td>all SMs, then SM 0</td><td>8 adds + 1 grid sync</td><td>as opening barrier, other phase word</td><td><span class="tag ok">yes</span> release observed locally; arrival order of peers unknown</td></tr>
+<tr><td>Host mailbox</td><td>8-byte stores to mapped pinned memory</td><td>SM 0, 40 threads</td><td>40 over PCIe</td><td>host RAM</td><td><span class="tag ok">yes</span> CPU poll; resolution = CPU loop</td></tr>
+<tr><td>Combine (reverse)</td><td>same bulk store pattern, one destination per token, plus local reduction</td><td>elected lane per warp</td><td>≈ 4,096 × 5.29 × 14,336 B back to sources</td><td>source rank's buffer at the dispatch slot</td><td>as above</td></tr>
+</tbody>
+</table>
+
+<p>Source lines (upstream commit): barriers <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L73">dispatch.cuh:73</a> and <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L394">:394</a>; reduction add <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L113">:113</a>; count stores <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L155">:155</a>, <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L166">:166</a>; receive poll <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L188">:188</a>; slot wait <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L283">:283</a>; token load <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L288">:288</a>; slot atomic <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L341">:341</a>; remote store <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L373">:373</a>; barrier internals <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/comm/barrier.cuh#L105">barrier.cuh:105</a>, <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/comm/barrier.cuh#L118">:118</a>, <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/comm/barrier.cuh#L209">:209-215</a>; PTX wrappers <code>common/ptx.cuh</code>.</p>
+
+<h3>1.1 The per-warp pipeline, and where its time can go</h3>
+<figure>
+<svg viewBox="0 0 880 330" role="img" aria-label="One dispatch warp's loop for one token, with the wait points and which of them are observable">
+  <defs>
+    <marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-acc"/></marker>
+    <marker id="w1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-warn"/></marker>
+  </defs>
+  <text x="20" y="26" class="head">One dispatch warp, one token (17 iterations per warp per dispatch in the running example)</text>
+  <g class="mono">
+    <rect x="20" y="46" width="118" height="46" rx="8" class="box-warn"/><text x="79" y="65" text-anchor="middle">wait_group 0</text><text x="79" y="81" text-anchor="middle" class="small">prev. stores done</text>
+    <rect x="152" y="46" width="118" height="46" rx="8" class="box"/><text x="211" y="65" text-anchor="middle">bulk load x</text><text x="211" y="81" text-anchor="middle" class="small">HBM → smem, 14 KB</text>
+    <rect x="284" y="46" width="118" height="46" rx="8" class="box"/><text x="343" y="65" text-anchor="middle">topk + meta</text><text x="343" y="81" text-anchor="middle" class="small">ldg, smem writes</text>
+    <rect x="416" y="46" width="118" height="46" rx="8" class="box-warn"/><text x="475" y="65" text-anchor="middle">atomicAdd</text><text x="475" y="81" text-anchor="middle" class="small">slot in counter[d]</text>
+    <rect x="548" y="46" width="118" height="46" rx="8" class="box"/><text x="607" y="65" text-anchor="middle">mbarrier wait</text><text x="607" y="81" text-anchor="middle" class="small">load landed</text>
+    <rect x="680" y="46" width="180" height="46" rx="8" class="box-acc"/><text x="770" y="65" text-anchor="middle">bulk store × k</text><text x="770" y="81" text-anchor="middle" class="small">lane k → rank k, 14,464 B</text>
+  </g>
+  <path d="M138 69 L152 69 M270 69 L284 69 M402 69 L416 69 M534 69 L548 69 M666 69 L680 69" class="ln"/>
+  <path d="M770 92 C770 150 79 150 79 46" class="ln-mut"/>
+  <text x="430" y="128" text-anchor="middle" class="small">next iteration: the slot cannot be reloaded until every lane's store has completed</text>
+
+  <text x="20" y="176" class="head">What is observable, and from which clock</text>
+  <g>
+    <rect x="20" y="190" width="270" height="118" rx="8" class="box-ok"/>
+    <text x="30" y="210" class="head">Local, one clock, free</text>
+    <text x="30" y="230" class="small">· atomic issue → return (per lane)</text>
+    <text x="30" y="246" class="small">· load issue → mbarrier complete</text>
+    <text x="30" y="262" class="small">· store issue → wait_group return, per lane,</text>
+    <text x="30" y="278" class="small">  i.e. per destination rank, per token, per byte count</text>
+    <text x="30" y="294" class="small">· time spent in wait_group = window pressure</text>
+  </g>
+  <g>
+    <rect x="305" y="190" width="270" height="118" rx="8" class="box-warn"/>
+    <text x="315" y="210" class="head">Needs calibration first</text>
+    <text x="315" y="230" class="small">"complete" for a bulk store into a peer's memory:</text>
+    <text x="315" y="246" class="small">· data accepted by local L2 / XBAR?</text>
+    <text x="315" y="262" class="small">· acknowledged by the peer's L2?</text>
+    <text x="315" y="278" class="small">· or only at the later red.release.sys?</text>
+    <text x="315" y="294" class="small">Experiment E1 settles it before anything else</text>
+  </g>
+  <g>
+    <rect x="590" y="190" width="270" height="118" rx="8" class="box-bad"/>
+    <text x="600" y="210" class="head">Unobservable in software</text>
+    <text x="600" y="230" class="small">· when bytes left the SM, the port, the switch</text>
+    <text x="600" y="246" class="small">· when they landed in the peer's L2 or HBM</text>
+    <text x="600" y="262" class="small">· which of the 18 links carried them</text>
+    <text x="600" y="278" class="small">· queue depth / credits on any of those</text>
+    <text x="600" y="294" class="small">· receiver: nothing until the closing barrier</text>
+  </g>
+</svg>
+<figcaption>Figure 1. The dispatch warp's loop. Orange boxes are where the warp can stall for reasons outside the SM. Every observable event is on the sender; the receiver participates in nothing per token.</figcaption>
+</figure>
+
+<p>Three structural facts drive everything below.</p>
+<ol>
+  <li><b>The window is one token per warp.</b> <code>tma_store_wait()</code> is <code>cp.async.bulk.wait_group 0</code>, not the <code>.read</code> variant, so the warp waits for full completion of all of its outstanding stores, not merely for the staging slot to be free. In flight per GPU: at most 240 warps × 5.29 destinations × 14,464 B ≈ 18 MB. At 400 GB/s that is 45 µs of bandwidth-delay product, comfortable against a quiet-fabric latency of a few µs, and not comfortable once completion latency at some destination grows past tens of µs.</li>
+  <li><b>Each iteration takes ≈ 40 µs on a saturated fabric</b> (0.68 ms per dispatch ÷ 17 iterations), against single-digit µs of nominal latency. The warp therefore spends most of its life inside <code>wait_group</code>, and that waiting time is exactly the queueing delay of its stores. FabricPerf laments that the NIC queue-depth signal disappears in scale-up fabrics; here it reappears as the per-lane wait duration.</li>
+  <li><b>Lane <em>k</em> owns destination <em>k</em>.</b> The stores at <a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/impls/ep/dispatch.cuh#L373">dispatch.cuh:373</a> are issued by whichever lane holds a non-null <code>dst_ptr</code>, each lane commits its own bulk group, and each lane executes its own <code>wait_group</code> before <code>__syncwarp</code>. Per-destination completion is already separated by the hardware; only the warp-level <code>__syncwarp</code> merges it back.</li>
+</ol>
+
+<h3>1.2 Two planes, four sync edges, eight ranks</h3>
+<figure>
+<svg viewBox="0 0 880 330" role="img" aria-label="Timeline of one dispatch across ranks showing the four synchronization edges where skew becomes idle fabric">
+  <text x="20" y="26" class="head">One dispatch, three of the eight ranks; time runs to the right</text>
+  <g class="small"><text x="20" y="60">rank A</text><text x="20" y="130">rank B</text><text x="20" y="200">rank C</text></g>
+  <g>
+    <line x1="70" y1="56" x2="860" y2="56" class="ln-mut"/>
+    <line x1="70" y1="126" x2="860" y2="126" class="ln-mut"/>
+    <line x1="70" y1="196" x2="860" y2="196" class="ln-mut"/>
+  </g>
+  <g>
+    <rect x="70" y="44" width="40" height="24" rx="4" class="box"/><text x="90" y="60" text-anchor="middle" class="small">launch</text>
+    <rect x="130" y="114" width="40" height="24" rx="4" class="box"/><text x="150" y="130" text-anchor="middle" class="small">launch</text>
+    <rect x="95" y="184" width="40" height="24" rx="4" class="box"/><text x="115" y="200" text-anchor="middle" class="small">launch</text>
+  </g>
+  <rect x="172" y="36" width="10" height="176" class="box-type"/><text x="177" y="232" text-anchor="middle" class="small">① open</text>
+  <g>
+    <rect x="186" y="44" width="80" height="24" rx="4" class="box-warn"/><text x="226" y="60" text-anchor="middle" class="small">notify A–E</text>
+    <rect x="186" y="114" width="80" height="24" rx="4" class="box-warn"/><text x="226" y="130" text-anchor="middle" class="small">notify A–E</text>
+    <rect x="186" y="184" width="80" height="24" rx="4" class="box-warn"/><text x="226" y="200" text-anchor="middle" class="small">notify A–E</text>
+  </g>
+  <rect x="270" y="36" width="10" height="176" class="box-type"/><text x="275" y="232" text-anchor="middle" class="small">② counts in</text>
+  <g>
+    <rect x="186" y="72" width="470" height="12" rx="3" class="box-acc"/><text x="421" y="97" text-anchor="middle" class="small">data plane: 240 warps × bulk stores (overlaps notify from ①)</text>
+    <rect x="186" y="142" width="560" height="12" rx="3" class="box-acc"/><text x="466" y="167" text-anchor="middle" class="small">rank B is a hot receiver, or has a straggler warp</text>
+    <rect x="186" y="212" width="420" height="12" rx="3" class="box-acc"/>
+  </g>
+  <g>
+    <rect x="284" y="44" width="60" height="24" rx="4" class="box"/><text x="314" y="60" text-anchor="middle" class="small">CPU alloc</text>
+  </g>
+  <rect x="750" y="36" width="10" height="176" class="box-type"/><text x="755" y="232" text-anchor="middle" class="small">③ close</text>
+  <g>
+    <rect x="766" y="44" width="70" height="24" rx="4" class="box-ok"/><text x="801" y="60" text-anchor="middle" class="small">copy (PDL)</text>
+    <rect x="766" y="114" width="70" height="24" rx="4" class="box-ok"/><text x="801" y="130" text-anchor="middle" class="small">copy (PDL)</text>
+    <rect x="766" y="184" width="70" height="24" rx="4" class="box-ok"/><text x="801" y="200" text-anchor="middle" class="small">copy (PDL)</text>
+  </g>
+  <path d="M656 78 L750 78" class="ln-bad"/><text x="703" y="72" text-anchor="middle" class="small fill-bad">idle</text>
+  <path d="M606 218 L750 218" class="ln-bad"/><text x="678" y="245" text-anchor="middle" class="small fill-bad">idle: C waits for B</text>
+  <text x="20" y="268" class="small">① opening NVLink barrier (no flush, no grid sync): launch skew becomes fabric idle on every rank.</text>
+  <text x="20" y="284" class="small">② receiver SM 0 has all 264 counts: gates the CPU allocation, not the data.</text>
+  <text x="20" y="300" class="small">③ wait_group + grid sync + NVLink barrier: the slowest warp on the slowest rank ends the dispatch for all eight.</text>
+  <text x="20" y="316" class="small">Local symptom on C, cause on B, possibly caused by A's routing.</text>
+</svg>
+<figcaption>Figure 2. The synchronization structure. The control plane (orange) and data plane (blue) run concurrently and meet only at ③. Everything between ① and ③ is invisible to the receiver.</figcaption>
+</figure>
+
+<h2 id="s2">2. Degradation catalogue</h2>
+<p>Each entry answers the same five questions: what mechanically goes wrong, what you would see with the tools available today (nsys/Kineto kernel timelines, DeepEP's own <code>bench_kineto</code> GB/s numbers, NVML and CUPTI counters, Nsight Compute), where those tools stop, what information would resolve it, and the experiment that confirms or refutes the mechanism. Severity tags are my estimate of how likely the mechanism is to matter in production, not measured impact.</p>
+
+<div class="prob" id="p1">
+<h3>P1 · Destination incast and victim flows <span class="tag bad">likely, large</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>Expert routing is never uniform. A rank hosting popular experts receives more tokens; DeepEP's test generator (<code>deep_ep.utils.gate.get_unbalanced_scores</code>, parameter <code>ratio</code>) models exactly this, with one rank receiving <em>ratio</em>× the others. That rank's NVLink ingress (18 links, ≈ 450 GB/s one direction) and its L2/HBM write path become the bottleneck while seven senders keep pushing. Inherent cost: the dispatch cannot finish before the hot rank has absorbed its bytes.</p>
+<p>The non-inherent cost is what matters for observability. Each sending warp waits for <em>all</em> of its lanes' stores. A warp whose token touches the hot rank, which under skew is most warps, holds its staging slot until the hot store completes, and so stops sending to the six idle ranks too (warp-level head-of-line blocking). Separately, if the sender's NVLink egress credits or the switch egress queues are shared between destinations, stores to idle ranks are physically delayed behind hot-rank stores (fabric-level head-of-line blocking, the "victim flow" of data-centre incast). The first is a DeepEP design fact; the second is an unmeasured property of NVLink/NVSwitch.</p>
+<figure>
+<svg viewBox="0 0 880 330" role="img" aria-label="Two kinds of head-of-line blocking under incast: a warp waiting for its slowest lane, and a shared egress queue delaying stores to idle ranks behind stores to the hot rank">
+  <defs>
+    <marker id="p1a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-acc"/></marker>
+    <marker id="p1b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker>
+    <marker id="p1m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker>
+  </defs>
+  <text x="20" y="24" class="head">A · Warp-level blocking (DeepEP design fact)</text>
+  <rect x="20" y="40" width="110" height="150" rx="8" class="box"/>
+  <text x="75" y="60" text-anchor="middle" class="head">one warp</text>
+  <g class="mono">
+    <text x="30" y="84">lane 0</text><text x="30" y="114">lane 1</text><text x="30" y="144">lane 2</text><text x="30" y="174">lane 3</text>
+  </g>
+  <path d="M130 80 L300 80" class="ln-bad" marker-end="url(#p1b)"/><text x="215" y="72" text-anchor="middle" class="small fill-bad">→ rank A (hot): completes at +60 µs</text>
+  <path d="M130 110 L220 110" class="ln-acc" marker-end="url(#p1a)"/><text x="232" y="114" class="small">→ rank B: +5 µs</text>
+  <path d="M130 140 L220 140" class="ln-acc" marker-end="url(#p1a)"/><text x="232" y="144" class="small">→ rank C: +5 µs</text>
+  <path d="M130 170 L220 170" class="ln-acc" marker-end="url(#p1a)"/><text x="232" y="174" class="small">→ rank D: +5 µs</text>
+  <rect x="20" y="206" width="400" height="56" rx="8" class="box-warn"/>
+  <text x="30" y="226" class="small">wait_group 0 + __syncwarp: slot locked until lane 0 completes.</text>
+  <text x="30" y="242" class="small">Next token's stores to B, C, D are not issued for 55 µs,</text>
+  <text x="30" y="256" class="small">although their links and the peers' ingress are idle.</text>
+  <text x="20" y="300" class="small">Signature in E2: latency to B, C, D stays at its balanced value;</text>
+  <text x="20" y="316" class="small">warp stall time and idle-rank ingress gaps grow with ratio.</text>
+
+  <line x1="450" y1="20" x2="450" y2="320" class="ln-mut"/>
+
+  <text x="470" y="24" class="head">B · Fabric-level blocking (hypothesis about NVLink)</text>
+  <rect x="470" y="46" width="90" height="120" rx="8" class="box"/>
+  <text x="515" y="66" text-anchor="middle" class="head">sender</text>
+  <text x="515" y="84" text-anchor="middle" class="small">240 warps</text>
+  <text x="515" y="100" text-anchor="middle" class="small">stores to</text>
+  <text x="515" y="116" text-anchor="middle" class="small">A, A, A, D, A …</text>
+  <rect x="580" y="70" width="150" height="40" rx="6" class="box-warn"/>
+  <text x="690" y="62" text-anchor="middle" class="small">shared queue / credits</text>
+  <g class="mono">
+    <rect x="586" y="76" width="26" height="28" class="box-bad"/><text x="599" y="95" text-anchor="middle">A</text>
+    <rect x="616" y="76" width="26" height="28" class="box-bad"/><text x="629" y="95" text-anchor="middle">A</text>
+    <rect x="646" y="76" width="26" height="28" class="box-bad"/><text x="659" y="95" text-anchor="middle">A</text>
+    <rect x="676" y="76" width="26" height="28" class="box-acc"/><text x="689" y="95" text-anchor="middle">D</text>
+  </g>
+  <path d="M560 90 L580 90" class="ln" />
+  <path d="M730 84 L790 60" class="ln-bad" marker-end="url(#p1b)"/>
+  <path d="M730 96 L790 130" class="ln-acc" marker-end="url(#p1a)"/>
+  <rect x="790" y="44" width="76" height="34" rx="6" class="box-bad"/><text x="828" y="60" text-anchor="middle" class="mono">rank A</text><text x="828" y="73" text-anchor="middle" class="small">ingress full</text>
+  <rect x="790" y="114" width="76" height="34" rx="6" class="box-acc"/><text x="828" y="130" text-anchor="middle" class="mono">rank D</text><text x="828" y="143" text-anchor="middle" class="small">ingress idle</text>
+  <rect x="470" y="206" width="396" height="56" rx="8" class="box-warn"/>
+  <text x="480" y="226" class="small">If credits or switch queues are shared across destinations, the store</text>
+  <text x="480" y="242" class="small">to D physically waits behind three stores to A. Its completion latency</text>
+  <text x="480" y="256" class="small">rises even though D is idle: a victim flow.</text>
+  <text x="470" y="300" class="small">Signature in E2: p50 latency to idle ranks rises with ratio;</text>
+  <text x="470" y="316" class="small">the wait_group.read patch does not restore idle-rank throughput.</text>
+</svg>
+<figcaption>Figure P1. The two mechanisms by which a hot destination slows traffic to idle ones. A is certain from the code; B is the fabric property the experiment tests. They leave different fingerprints in the per-lane latency trace.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>Dispatch kernel time rises on <em>every</em> rank equally (the closing barrier equalises it); <code>bench_kineto</code> reports lower GB/s; <code>cumulative_local_expert_recv_stats</code> shows the imbalance after the fact; NVML per-link counters show the hot GPU's RX near line rate and others below. Nothing says whether the idle ranks' ingress was idle because nothing was sent to them or because their senders were stuck.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>Per-GPU and per-link byte counters cannot separate "stalled behind a slow destination" from "nothing to send". Nsight Compute cannot replay a cooperative multi-GPU kernel (its barriers wait for peers that do not replay). Kineto sees one kernel per rank. There is no per-(source, destination) latency anywhere in the stack.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>Per-destination completion latency as seen by senders over time, which separates the two kinds of head-of-line blocking: under pure warp-level blocking, stores to idle ranks complete as fast as in the balanced run while the warp waits for the hot one; under fabric-level blocking, their completion latency rises too. Plus receiver-side ingress rate per source, which software cannot provide (only NVSwitch port counters know source and destination).</p></div></div>
+<div class="row"><div class="k">Experiment E2</div><div><p>Instrument each lane's store issue and <code>wait_group</code> return (Section 4.2). Sweep <code>ratio</code> ∈ {1, 2, 4, 8} with the precise generator. Record per-(src, dst) latency distributions per 50 µs bin and per-warp stall time. Prediction if fabric-level blocking exists: p50 latency to idle ranks grows with <code>ratio</code>; if only warp-level: it does not, but warp stall time and idle-rank ingress gaps do. Second manipulation: a patched kernel that uses <code>wait_group.read</code> in the loop and a full wait only before the barrier (slot free as soon as the source bytes are read). If throughput to idle ranks recovers, the warp-level mechanism is confirmed and quantified; if completion latency to idle ranks remains inflated, the fabric shares queues across destinations.</p></div></div>
+</div>
+
+<div class="prob" id="p2">
+<h3>P2 · Throughput coupled to latency through the one-token window <span class="tag warn">likely under contention</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>With 240 warps and one token in flight each, sender throughput is bounded by <em>in-flight bytes / completion latency</em>. On a quiet fabric the 18 MB window is ample. Under any of P1, P6 or P7 the completion latency grows, and once it exceeds roughly 45 µs the window, not the links, limits throughput: the fabric drains, latency drops, warps resume, the fabric fills, a sawtooth. There is no adaptive credit: the window is fixed at compile time by shared-memory capacity (15 slots of 14,496 B in 227 KB).</p>
+<p>A second, more basic unknown sits underneath: what event does <code>cp.async.bulk.wait_group</code> actually wait for when the destination is a peer GPU? Completion of a bulk store means the writes are "performed", but whether that is acceptance by the local memory system or acknowledgement from the peer's L2 decides whether the measured wait is a queueing signal or a round trip. The closing barrier's correctness relies on <code>wait_group</code> followed by <code>red.release.sys</code>, so at least the pair makes remote visibility certain; which half carries the latency is unknown.</p>
+<figure>
+<svg viewBox="0 0 880 300" role="img" aria-label="The same warp loop on a quiet and on a congested fabric: with a one-token window, longer completion latency leaves the warp idle and the fabric draining">
+  <defs><marker id="p2a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker></defs>
+  <text x="20" y="24" class="head">Quiet fabric · completion ≈ 5 µs</text>
+  <g>
+    <rect x="20" y="36" width="40" height="22" class="box"/><rect x="60" y="36" width="20" height="22" class="box-warn"/><rect x="80" y="36" width="30" height="22" class="box-acc"/><rect x="110" y="36" width="34" height="22" class="box-ok"/>
+    <rect x="144" y="36" width="40" height="22" class="box"/><rect x="184" y="36" width="20" height="22" class="box-warn"/><rect x="204" y="36" width="30" height="22" class="box-acc"/><rect x="234" y="36" width="34" height="22" class="box-ok"/>
+    <rect x="268" y="36" width="40" height="22" class="box"/><rect x="308" y="36" width="20" height="22" class="box-warn"/><rect x="328" y="36" width="30" height="22" class="box-acc"/><rect x="358" y="36" width="34" height="22" class="box-ok"/>
+    <rect x="392" y="36" width="40" height="22" class="box"/><rect x="432" y="36" width="20" height="22" class="box-warn"/><rect x="452" y="36" width="30" height="22" class="box-acc"/><rect x="482" y="36" width="34" height="22" class="box-ok"/>
+  </g>
+  <text x="530" y="51" class="small">4 tokens in 4 units: window never binds</text>
+  <rect x="20" y="66" width="496" height="8" class="box-acc"/><text x="530" y="74" class="small">fabric busy throughout</text>
+
+  <text x="20" y="112" class="head">Congested fabric · completion ≈ 60 µs</text>
+  <g>
+    <rect x="20" y="124" width="40" height="22" class="box"/><rect x="60" y="124" width="20" height="22" class="box-warn"/><rect x="80" y="124" width="30" height="22" class="box-acc"/><rect x="110" y="124" width="260" height="22" class="box-ok"/>
+    <rect x="370" y="124" width="40" height="22" class="box"/><rect x="410" y="124" width="20" height="22" class="box-warn"/><rect x="430" y="124" width="30" height="22" class="box-acc"/><rect x="460" y="124" width="260" height="22" class="box-ok"/>
+  </g>
+  <text x="240" y="139" text-anchor="middle" class="small">wait_group: slot locked, nothing issued</text>
+  <text x="590" y="139" text-anchor="middle" class="small">wait_group</text>
+  <text x="726" y="139" class="small">1.3 tokens, same time</text>
+  <rect x="20" y="154" width="90" height="8" class="box-acc"/><rect x="110" y="154" width="260" height="8" class="box-bad"/><rect x="370" y="154" width="90" height="8" class="box-acc"/><rect x="460" y="154" width="260" height="8" class="box-bad"/>
+  <text x="240" y="176" text-anchor="middle" class="small fill-bad">queue drains, links go idle, latency falls, warps resume: sawtooth</text>
+
+  <g>
+    <rect x="20" y="200" width="60" height="16" class="box"/><text x="88" y="212" class="small">load x</text>
+    <rect x="150" y="200" width="60" height="16" class="box-warn"/><text x="218" y="212" class="small">atomic</text>
+    <rect x="280" y="200" width="60" height="16" class="box-acc"/><text x="348" y="212" class="small">issue ≤ 8 stores</text>
+    <rect x="440" y="200" width="60" height="16" class="box-ok"/><text x="508" y="212" class="small">wait_group (completion)</text>
+  </g>
+  <rect x="20" y="236" width="840" height="48" rx="8" class="box-type"/>
+  <text x="30" y="256" class="small">throughput ≤ min( link rate , in-flight bytes / completion latency ) = min( 400 GB/s , 18 MB / L ).  The window binds when L &gt; 45 µs.</text>
+  <text x="30" y="274" class="small">The window is fixed by shared-memory capacity (15 slots × 14,496 B) and never adapts; nothing reports L except the wait itself.</text>
+</svg>
+<figcaption>Figure P2. Why "nothing is busy but it is slow": with one token per warp, the completion latency L sets the issue rate. E0 measures the knee; E1 establishes what L actually includes.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>Measured GB/s falls below the per-GPU link rate with no counter saturated: NVML link utilisation is well under 100%, HBM bandwidth is low, SM issue slots are free. Classic "nothing is busy but it is slow".</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>No profiler exposes outstanding bulk-store bytes or async-proxy wait reasons. PC sampling attributes the stall to the <code>wait_group</code> instruction and stops. Nothing relates that stall to a destination or a latency.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>Calibrated semantics of bulk-store completion against destination and size; in-flight bytes per destination over time (sum of issued minus completed, computable from the lane trace); the hardware's own credit limit on outstanding remote stores, measured by issuing without waiting.</p></div></div>
+<div class="row"><div class="k">Experiments E0, E1</div><div><p><b>E1 (calibration).</b> A standalone kernel: one warp stores <em>B</em> bytes from shared memory to peer <em>p</em> (via the same <code>ncclGetLsaPointer</code> window), timestamps around <code>wait_group</code>; sweep <em>B</em> from 16 B to 64 KB, <em>p</em> over self and 7 peers, and compare against three references: a <code>wait_group.read</code> wait, a <code>fence.acq_rel.sys</code> after the store, and a ping-pong round trip through the same buffer. The gaps between those curves say what "complete" includes. Also issue <em>N</em> stores back to back without waiting and time the <em>N</em>-th issue: the knee is the hardware's outstanding-store limit per SM, the credit that DeepEP never sees. <b>E0 (window).</b> Run the unmodified dispatch with <code>num_sms</code> ∈ {2,4,8,16,24,32} and tokens ∈ {256, 1024, 4096}; plot GB/s against in-flight bytes. The slope in the linear region is 1/latency; where it flattens the links are the limit. Repeat under P6 load to show the knee moving.</p></div></div>
+</div>
+
+<div class="prob" id="p3">
+<h3>P3 · Address hot spots: the slot-counter sector and the barrier word <span class="tag warn">certain mechanism, size unknown</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p><code>scaleup_atomic_sender_count</code> is eight consecutive <code>int</code>s at one offset of the window (<a href="https://github.com/deepseek-ai/DeepEP/blob/93eb6eb/deep_ep/include/deep_ep/layout/ep/workspace.cuh#L17">workspace.cuh:17</a>): one 32-byte sector in one 128-byte line in one L2 slice. Every (token, destination) pair on the GPU does a returning <code>atomicAdd</code> on it: ≈ 21,700 per dispatch, from 240 warps, all serialised at that slice. The atomic's return value is on the critical path of the warp (the destination address depends on it), so its latency, not just its throughput, adds to every iteration. Unlike a bandwidth problem this one does not scale down with fewer tokens per warp: in the decode regime (P8) it is a fixed cost per token.</p>
+<p>The barrier uses the same shape in the other direction: every rank's SM 0 performs <code>red.release.sys.add</code> into the <em>same</em> 4-byte word on each peer. Eight system-scope releases converging on one line per rank per barrier, twice per dispatch, and the release semantics force each issuing SM to drain its prior stores first. The notify receive array is 264 adjacent 8-byte slots, written by eight peers, polled by 128 threads: a third address-concentrated region.</p>
+<figure>
+<svg viewBox="0 0 880 330" role="img" aria-label="Three address funnels in the EPSignals region: eight ranks' barrier adds into one word, 240 warps' atomics into one 32-byte sector, eight peers' count stores into a 2 KB array">
+  <defs><marker id="p3a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-warn"/></marker></defs>
+  <text x="20" y="24" class="head">The first 74 KB of every rank's window (EPSignals), and who converges on which bytes</text>
+  <rect x="20" y="40" width="840" height="30" rx="4" class="box"/>
+  <g class="mono">
+    <rect x="20" y="40" width="40" height="30" class="box-bad"/><text x="40" y="60" text-anchor="middle">0</text>
+    <rect x="60" y="40" width="260" height="30" class="box"/><text x="190" y="60" text-anchor="middle">notify_reduction (local, 24 KB)</text>
+    <rect x="320" y="40" width="200" height="30" class="box"/><text x="420" y="60" text-anchor="middle">send counts (unused here)</text>
+    <rect x="520" y="40" width="200" height="30" class="box-warn"/><text x="620" y="60" text-anchor="middle">receive counts 49,216</text>
+    <rect x="720" y="40" width="24" height="30" class="box-bad"/><text x="732" y="84" text-anchor="middle" class="small">73,792</text>
+    <rect x="744" y="40" width="116" height="30" class="box"/><text x="802" y="60" text-anchor="middle" class="small">15 MiB hybrid fields</text>
+  </g>
+
+  <g>
+    <text x="110" y="110" text-anchor="middle" class="head">barrier word · bytes 8–15</text>
+    <g class="mono small"><text x="30" y="134">rank 0</text><text x="30" y="150">rank 1</text><text x="30" y="166">…</text><text x="30" y="182">rank 7</text></g>
+    <path d="M75 130 L130 160" class="ln-warn" marker-end="url(#p3a)"/><path d="M75 146 L130 160" class="ln-warn" marker-end="url(#p3a)"/><path d="M75 178 L130 160" class="ln-warn" marker-end="url(#p3a)"/>
+    <rect x="136" y="150" width="60" height="20" rx="4" class="box-bad"/><text x="166" y="164" text-anchor="middle" class="mono">4 B</text>
+    <text x="110" y="206" text-anchor="middle" class="small">red.release.sys.add × 8</text>
+    <text x="110" y="222" text-anchor="middle" class="small">twice per dispatch; each release</text>
+    <text x="110" y="238" text-anchor="middle" class="small">drains the issuer's prior stores</text>
+    <text x="110" y="262" text-anchor="middle" class="small">arrival order erased: counter</text>
+    <text x="110" y="278" text-anchor="middle" class="small">reaches 8, nobody knows who was last</text>
+  </g>
+  <line x1="240" y1="90" x2="240" y2="300" class="ln-mut"/>
+  <g>
+    <text x="400" y="110" text-anchor="middle" class="head">slot counters · 32 B at 73,792</text>
+    <g class="mono small"><text x="270" y="134">warp 0 lane k</text><text x="270" y="150">warp 1 lane k</text><text x="270" y="166">…</text><text x="270" y="182">warp 239 lane k</text></g>
+    <path d="M360 130 L420 160" class="ln-warn" marker-end="url(#p3a)"/><path d="M360 146 L420 160" class="ln-warn" marker-end="url(#p3a)"/><path d="M360 178 L420 160" class="ln-warn" marker-end="url(#p3a)"/>
+    <rect x="426" y="146" width="100" height="28" rx="4" class="box-bad"/>
+    <g class="mono small"><text x="433" y="164">0|1|2|3|4|5|6|7</text></g>
+    <text x="476" y="190" text-anchor="middle" class="small">one 128 B line → one L2 slice</text>
+    <text x="400" y="214" text-anchor="middle" class="small">≈ 21,700 returning atomicAdd per dispatch</text>
+    <text x="400" y="230" text-anchor="middle" class="small">serialised at that slice; the returned slot</text>
+    <text x="400" y="246" text-anchor="middle" class="small">is needed before the store can be issued</text>
+    <text x="400" y="270" text-anchor="middle" class="small">fixed cost per token: invisible in prefill,</text>
+    <text x="400" y="286" text-anchor="middle" class="small">a floor in decode (P8)</text>
+  </g>
+  <line x1="560" y1="90" x2="560" y2="300" class="ln-mut"/>
+  <g>
+    <text x="720" y="110" text-anchor="middle" class="head">receive counts · 264 × 8 B</text>
+    <g class="mono small"><text x="590" y="134">peer 0 SM 0</text><text x="590" y="150">peer 1 SM 0</text><text x="590" y="166">…</text><text x="590" y="182">peer 7 SM 0</text></g>
+    <path d="M670 130 L720 160" class="ln-warn" marker-end="url(#p3a)"/><path d="M670 146 L720 160" class="ln-warn" marker-end="url(#p3a)"/><path d="M670 178 L720 160" class="ln-warn" marker-end="url(#p3a)"/>
+    <rect x="726" y="146" width="120" height="28" rx="4" class="box-warn"/><text x="786" y="164" text-anchor="middle" class="mono">33 slots per peer</text>
+    <text x="720" y="206" text-anchor="middle" class="small">st.relaxed.sys × 264 in, polled by</text>
+    <text x="720" y="222" text-anchor="middle" class="small">128 threads with ld.volatile</text>
+    <text x="720" y="246" text-anchor="middle" class="small">same links as 274 MB of data (P4);</text>
+    <text x="720" y="262" text-anchor="middle" class="small">which link an 8 B store takes is</text>
+    <text x="720" y="278" text-anchor="middle" class="small">decided by its address, unknown</text>
+  </g>
+  <text x="20" y="322" class="small">E3 pads the counters to one line each and gives each sender its own barrier word; the latency difference is the cost of the funnel.</text>
+</svg>
+<figcaption>Figure P3. Contention in DeepEP is decided by a handful of addresses. Each funnel is a serialisation point that no per-channel or per-link counter can see.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>None that is specific. Nsight Compute, if it could run, would report L2 atomic throughput for the whole kernel, dwarfed by 300 MB of data traffic. Per-iteration time looks slightly long. In decode, dispatch latency has an unexplained floor.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>No per-address or per-slice contention counter is exposed; L2 metrics are device-wide totals; and the kernel cannot be replayed under ncu anyway. The only software-visible evidence is the atomic's return latency, which no tool records.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>Per-line serialisation (queue) depth at the L2 atomic unit, or its software proxy: return latency of each atomic against the number of concurrent issuers; the address-to-slice mapping so that layout changes can be reasoned about rather than guessed.</p></div></div>
+<div class="row"><div class="k">Experiment E3</div><div><p>Timestamp around the <code>atomicAdd</code> in the issuing lane (two <code>%globaltimer</code> reads, or <code>clock64</code> for 1 ns resolution). Baseline versus a layout patch that pads each counter to its own 128-byte line, versus warp-aggregated allocation (one atomic per warp per destination, which the deduplication already enables). Vary tokens and <code>num_sms</code>. Expected: baseline latency grows with concurrent warps and shows a long tail; padding removes the cross-destination serialisation but not the per-destination one; the kernel-level effect is small in prefill and measurable in decode. For the barrier, measure arrive-to-release time on each rank with and without a padded, per-sender signal layout (eight words instead of one, polled together). The difference is the cost of the incast word.</p></div></div>
+</div>
+
+<div class="prob" id="p4">
+<h3>P4 · Control plane queued behind the data plane <span class="tag warn">plausible, regime-dependent</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>The 264 count stores from SM 0 leave through the same SM memory pipeline, the same L2, the same NVLink ports and the same switch queues as the bulk stores of the 15 dispatch warps on that SM and the 225 on the others. They are 8-byte system-scope relaxed stores with no priority. If the fabric queues are deep with 14 KB stores, a count store that nominally takes 2 µs may take as long as the queue ahead of it. The receiver's phase F cannot finish until the last of eight senders' counts arrive, and the CPU allocation (<code>torch.empty</code> of a ≈ 500 MB output) cannot start until phase H. In prefill this is hidden behind 0.7 ms of data; in decode, or when the hot rank's queues are deep (P1), the control plane can become the critical path, and the copy epilogue starts late.</p>
+<p>The same applies to the opening barrier's atomics when a previous kernel's stores are still draining, and to the hybrid kernels' per-channel tail signals, which are issued every six tokens and polled by the forwarding warps.</p>
+<figure>
+<svg viewBox="0 0 880 250" role="img" aria-label="An 8-byte count store from SM 0 enters the same egress queue as 14 KB bulk stores from the dispatch warps and is delayed by the queue ahead of it, delaying the receiver's count phase and the CPU allocation">
+  <defs>
+    <marker id="p4a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-acc"/></marker>
+    <marker id="p4w" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-warn"/></marker>
+  </defs>
+  <text x="20" y="24" class="head">Sender rank</text>
+  <rect x="20" y="40" width="130" height="50" rx="8" class="box-acc"/><text x="85" y="60" text-anchor="middle" class="head">dispatch warps</text><text x="85" y="78" text-anchor="middle" class="small">240 × 14,464 B stores</text>
+  <rect x="20" y="110" width="130" height="50" rx="8" class="box-warn"/><text x="85" y="130" text-anchor="middle" class="head">SM 0 notify</text><text x="85" y="148" text-anchor="middle" class="small">264 × 8 B count stores</text>
+  <path d="M150 65 L200 92" class="ln-acc" marker-end="url(#p4a)"/>
+  <path d="M150 135 L200 108" class="ln-warn" marker-end="url(#p4w)"/>
+  <text x="300" y="56" text-anchor="middle" class="small">L2 → NVLink port → switch: one queue, no priority</text>
+  <rect x="200" y="70" width="330" height="60" rx="6" class="box"/>
+  <g class="mono">
+    <rect x="208" y="80" width="60" height="40" class="box-acc"/><text x="238" y="104" text-anchor="middle" class="small">14 KB</text>
+    <rect x="272" y="80" width="60" height="40" class="box-acc"/><text x="302" y="104" text-anchor="middle" class="small">14 KB</text>
+    <rect x="336" y="80" width="60" height="40" class="box-acc"/><text x="366" y="104" text-anchor="middle" class="small">14 KB</text>
+    <rect x="400" y="80" width="60" height="40" class="box-acc"/><text x="430" y="104" text-anchor="middle" class="small">14 KB</text>
+    <rect x="464" y="80" width="14" height="40" class="box-warn"/><text x="471" y="135" text-anchor="middle" class="small">8 B</text>
+  </g>
+  <path d="M530 100 L600 100" class="ln" marker-end="url(#p4a)"/>
+  <text x="565" y="92" text-anchor="middle" class="small">drain</text>
+  <text x="640" y="24" class="head">Receiver rank</text>
+  <rect x="600" y="70" width="260" height="60" rx="8" class="box"/>
+  <text x="730" y="88" text-anchor="middle" class="head">SM 0 phase F</text>
+  <text x="730" y="106" text-anchor="middle" class="small">polls 264 slots; done when the</text><text x="730" y="120" text-anchor="middle" class="small">last sender's count lands</text>
+  <path d="M730 130 L730 160" class="ln-warn" marker-end="url(#p4w)"/>
+  <rect x="600" y="160" width="260" height="34" rx="8" class="box-warn"/><text x="730" y="182" text-anchor="middle" class="small">phase H → mailbox → torch.empty → copy</text>
+  <text x="20" y="200" class="small">Quiet fabric: 8 B store ≈ 2 µs one way. Loaded fabric: the count waits for the bulk bytes queued ahead of it on the same path.</text>
+  <text x="20" y="218" class="small">Prefill hides it behind 0.7 ms of data; decode and incast do not. Every tool reports both as "NVLink TX bytes".</text>
+  <text x="20" y="236" class="small">E4 timestamps the store on the sender and the poll success on the receiver, with and without the data plane, and after moving the array.</text>
+</svg>
+<figcaption>Figure P4. Control and data share one unprioritised path. The symptom lands on the receiver's CPU, three hops away from the cause.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>A gap between the dispatch kernel's end and the copy epilogue's start on the Kineto timeline, or a CPU thread shown spinning in <code>current_stream_wait</code>. It is indistinguishable from allocator time, PCIe mailbox latency or launch overhead.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>No tool distinguishes control stores from data stores: both are "NVLink TX bytes". The receiver poll's resolution is one L2 round trip and it only records that the count eventually arrived.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>One-way latency of small stores against concurrent bulk load on the same source-destination pair, and whether it depends on address (does a different offset in the window take a different link?). This is the clearest case where a cross-GPU timeline is required: the event is a store on A and a poll success on B. On one node the <code>%globaltimer</code> offsets between GPUs are stable (FabricPerf: 0.1 ns per run drift intra-node), so a single ping-pong calibration per session is enough.</p></div></div>
+<div class="row"><div class="k">Experiment E4</div><div><p>Timestamp phase E issue on the sender and phase F success per slot on the receiver (both in SM 0, negligible perturbation). Run (a) notify alone, by launching with <code>num_tokens</code> small enough that the data plane is trivial; (b) full dispatch; (c) full dispatch with <code>ratio</code> = 4. Expected: (a) gives the quiet-fabric one-way time; (b) and (c) inflate the tail by the data queueing. Address probe: relocate the receive array by a few MB (the <code>EPSignals</code> struct has 15 MiB of unused hybrid fields) and repeat; a change in latency distribution reveals that address selects a path.</p></div></div>
+</div>
+
+<div class="prob" id="p5">
+<h3>P5 · Skew amplification: barriers, grid syncs and straggler warps <span class="tag bad">certain, size depends on the pipeline</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>Three synchronisations gate every dispatch: the opening NVLink barrier (no rank writes until all eight have entered), the closing grid sync (no SM of a rank proceeds until its slowest warp has completed its last store), and the closing NVLink barrier (no rank proceeds until the slowest rank's slowest warp has). Launch skew between ranks, caused by CPU scheduling, differing previous kernels or the Python side, is converted directly into idle fabric at ①. Per-warp work varies with the destination mix of its ≈ 17 tokens and with each destination's state, so warps finish at different times and the fabric drains in a tail at ③, FabricPerf's channel-imbalance observation in a different costume. In the hybrid kernel the forwarding warps add a third kind of wait: polling eight scale-out tails for data that may arrive in bursts.</p>
+<figure>
+<svg viewBox="0 0 880 275" role="img" aria-label="Per-warp completion times on one rank form a staircase; the fabric drains between the first and the last warp, and the closing barrier waits for the last">
+  <text x="20" y="24" class="head">One rank, 240 dispatch warps, last-store completion time per warp (sorted)</text>
+  <g>
+    <line x1="60" y1="200" x2="840" y2="200" class="ln"/><line x1="60" y1="40" x2="60" y2="200" class="ln"/>
+    <text x="840" y="218" text-anchor="end" class="small">time →</text>
+    <text x="52" y="46" text-anchor="end" class="small">warps</text>
+  </g>
+  <g class="fill-acc">
+    <rect x="60" y="180" width="500" height="10"/><rect x="60" y="168" width="510" height="10"/><rect x="60" y="156" width="520" height="10"/><rect x="60" y="144" width="530" height="10"/>
+    <rect x="60" y="132" width="545" height="10"/><rect x="60" y="120" width="560" height="10"/><rect x="60" y="108" width="580" height="10"/><rect x="60" y="96" width="610" height="10"/>
+    <rect x="60" y="84" width="650" height="10"/><rect x="60" y="72" width="700" height="10"/><rect x="60" y="60" width="760" height="10"/><rect x="60" y="48" width="800" height="10"/>
+  </g>
+  <line x1="560" y1="40" x2="560" y2="200" class="ln-bad"/><text x="560" y="36" text-anchor="middle" class="small">first warp done</text>
+  <line x1="860" y1="40" x2="860" y2="200" class="ln-bad"/><text x="860" y="36" text-anchor="end" class="small">last warp done = grid sync</text>
+  <rect x="560" y="206" width="300" height="12" class="box-bad"/><text x="710" y="232" text-anchor="middle" class="small fill-bad">tail: links drain while 240 slots hold nothing new;</text><text x="710" y="246" text-anchor="middle" class="small fill-bad">then the NVLink barrier adds the slowest rank's tail</text>
+  <text x="20" y="266" class="small">tail fraction = (last − first) / total. E7 asks whether a warp's position here is explained by its tokens' destination mix (scheduling) or not (path).</text>
+</svg>
+<figcaption>Figure P5. The closing barrier converts per-warp and per-rank variance into idle fabric. FabricPerf's channel imbalance, with a named cause to test.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>Kernel durations that differ per rank on the Kineto timeline by exactly the launch skew; a bandwidth-versus-time curve (if one could be drawn) that ramps down instead of ending sharply; "dispatch is slow" with every rank blaming the others.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>Kineto's cross-process clocks are aligned to a few µs at best and show kernel boundaries only. Inside the kernel, no tool records when the barrier released, when each warp finished, or in which order peers arrived. The barrier itself destroys the information: a counter reaching 8 says nothing about who was last.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>A cross-rank in-kernel timeline: per rank, timestamps of entry, barrier arrive, barrier release, notify phases, last store completion per warp, closing barrier arrive and release. Peer arrival <em>order</em> at a barrier can be recovered without clocks by replacing the <code>red.add</code> with a fetch-add whose return value is the arrival index, at the cost of one round trip per rank per barrier, acceptable for diagnosis.</p></div></div>
+<div class="row"><div class="k">Experiment E6, E7</div><div><p><b>E6.</b> Record the timeline above; inject known skew with a CPU sleep on one rank before launch (0, 20, 100, 500 µs); verify that fabric-idle time at ① equals the injected skew and that no rank's data plane starts earlier. <b>E7.</b> From the per-warp last-completion timestamps compute the tail fraction (time between first and last warp completion over total) under uniform and skewed routing; correlate each warp's completion time with its tokens' destination counts. If destination mix explains most variance, the fix is scheduling; if not, the fabric path does, which points back to P1 and P9.</p></div></div>
+</div>
+
+<div class="prob" id="p6">
+<h3>P6 · Interference with concurrent compute <span class="tag bad">the stated use case, unmeasured</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>DeepEP runs on 16 SMs so that the other 116 can run GEMMs on the compute stream. Both share the L2 (50 MB), the crossbar and the HBM. The sender's bulk loads of <code>x</code> compete with the GEMM for HBM reads; the receiver's incoming 14 KB rows are written into its L2 and evicted to HBM (the 452 MiB buffer never fits), competing with the GEMM's traffic in the opposite direction. Interference is bidirectional: the GEMM slows the communication, and 400 GB/s of ingress plus the eventual copy epilogue (another read and write of every row) slows the GEMM. DeepEP's bandwidth model (<code>get_theoretical_num_sms</code>) picks 16 SMs assuming per-SM write bandwidth of 45 GB/s; under contention that constant is wrong and so is the SM count. FabricPerf's LLC finding (buffers evicted to ≈ 0 % hit rate) is the single-kernel version of this; the two-kernel version is what production runs.</p>
+<figure>
+<svg viewBox="0 0 880 320" role="img" aria-label="Sender and receiver GPUs during overlapped dispatch and GEMM: on the sender the token loads share L2 and HBM with the GEMM, on the receiver the fabric ingress shares them too, and device-wide counters sum both kernels">
+  <defs>
+    <marker id="p6a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-acc"/></marker>
+    <marker id="p6m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker>
+  </defs>
+  <text x="20" y="24" class="head">Sender GPU</text>
+  <rect x="20" y="40" width="160" height="50" rx="8" class="box-acc"/><text x="100" y="60" text-anchor="middle" class="head">16 SMs: dispatch</text><text x="100" y="78" text-anchor="middle" class="small">bulk load x, bulk store out</text>
+  <rect x="20" y="110" width="160" height="50" rx="8" class="box"/><text x="100" y="130" text-anchor="middle" class="head">116 SMs: GEMM</text><text x="100" y="148" text-anchor="middle" class="small">streams A, B, C</text>
+  <rect x="200" y="60" width="80" height="80" rx="8" class="box-warn"/><text x="240" y="96" text-anchor="middle" class="head">L2</text><text x="240" y="114" text-anchor="middle" class="small">50 MB</text>
+  <rect x="320" y="60" width="80" height="80" rx="8" class="box-warn"/><text x="360" y="96" text-anchor="middle" class="head">HBM</text><text x="360" y="114" text-anchor="middle" class="small">3.35 TB/s</text>
+  <path d="M180 65 L200 85" class="ln-acc" marker-end="url(#p6a)"/><text x="185" y="56" class="small">14 KB/token</text>
+  <path d="M180 135 L200 115" class="ln-mut" marker-end="url(#p6m)"/><text x="185" y="152" class="small">≤ 2.5 TB/s</text>
+  <path d="M280 100 L320 100" class="ln"/>
+  <path d="M240 60 C240 30 440 30 440 100" class="ln-acc" marker-end="url(#p6a)"/><text x="340" y="34" text-anchor="middle" class="small">NVLink out ≈ 400 GB/s</text>
+
+  <text x="470" y="24" class="head">Receiver GPU</text>
+  <rect x="440" y="60" width="80" height="80" rx="8" class="box-warn"/><text x="480" y="96" text-anchor="middle" class="head">L2</text><text x="480" y="114" text-anchor="middle" class="small">rows land here</text>
+  <rect x="560" y="60" width="80" height="80" rx="8" class="box-warn"/><text x="600" y="96" text-anchor="middle" class="head">HBM</text><text x="600" y="114" text-anchor="middle" class="small">452 MiB buffer</text>
+  <path d="M520 100 L560 100" class="ln-acc" marker-end="url(#p6a)"/><text x="540" y="92" text-anchor="middle" class="small">evict</text>
+  <rect x="670" y="40" width="190" height="50" rx="8" class="box"/><text x="765" y="60" text-anchor="middle" class="head">116 SMs: GEMM</text><text x="765" y="78" text-anchor="middle" class="small">its own HBM streams</text>
+  <rect x="670" y="110" width="190" height="50" rx="8" class="box-ok"/><text x="765" y="130" text-anchor="middle" class="head">copy epilogue, later</text><text x="765" y="148" text-anchor="middle" class="small">re-reads every row, writes recv_x</text>
+  <path d="M670 65 L640 85" class="ln-mut" marker-end="url(#p6m)"/>
+  <path d="M670 135 L640 115" class="ln-mut" marker-end="url(#p6m)"/>
+
+  <rect x="20" y="190" width="840" height="56" rx="8" class="box-bad"/>
+  <text x="30" y="210" class="small">What a profiler sees on either GPU: one DRAM number, one L2 hit rate, one NVLink byte count, for both kernels together.</text>
+  <text x="30" y="228" class="small">Nsight Compute cannot help: it serialises the kernels, which removes the interference it would measure.</text>
+  <rect x="20" y="258" width="840" height="50" rx="8" class="box-ok"/>
+  <text x="30" y="278" class="small">E5 separates the sides: GEMM only on senders inflates load latency; GEMM only on receivers inflates store completion to those ranks;</text>
+  <text x="30" y="296" class="small">neither changes atomic latency. Device-wide PM-sampled counters are correlated with the trace, not read in place of it.</text>
+</svg>
+<figcaption>Figure P6. Interference enters on both ends of the transfer through resources that counters report only in aggregate. The lane trace tells the ends apart.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>Both kernels are longer when overlapped than when alone, and the sum is less than the serial time, so overlap "works" and nobody looks further. Which side pays, and through which resource, is unknown.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>Nsight Compute serialises kernels; it cannot measure interference by construction. CUPTI PM sampling can read L2 and HBM counters on a timeline while both run, but they are device totals: 16 SMs of communication and 116 of GEMM are indistinguishable in a DRAM-bandwidth counter. PC sampling attributes stalls per kernel but not to the competing kernel's traffic.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>Per-kernel (per SM-set) attribution of shared memory-system resources, which hardware does not provide, and the software substitute: the communication kernel's own per-lane latency trace (load completion, store completion, atomic return) time-correlated with device-wide counters and with the GEMM's phase. That turns "the device was busy" into "the sender's loads slowed by 2×, the stores did not", which is attribution enough to act on.</p></div></div>
+<div class="row"><div class="k">Experiment E5</div><div><p>Co-run a large BF16 GEMM on the compute stream at four intensities (none, 25 %, 50 %, 100 % of HBM bandwidth, set by shape), on (a) all ranks, (b) only receivers of a skewed routing, (c) only senders. Measure dispatch GB/s, the per-lane trace (load latency, store latency per destination, atomic latency), GEMM TFLOP/s, and CUPTI PM-sampled DRAM and L2 throughput at 10 µs. Expected signatures: (c) inflates load latency only; (b) inflates store completion latency to the loaded ranks only; both shrink effective window (P2). Repeat with the receive buffer in a size that fits L2 (small <code>num_max_tokens_per_rank</code>) to test whether L2 residency of landing rows changes the GEMM's slowdown.</p></div></div>
+</div>
+
+<div class="prob" id="p7">
+<h3>P7 · Concurrent communication kernels on the same links <span class="tag warn">common in pipelined MoE</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>Two-microbatch overlap (DualPipe-style) runs dispatch of microbatch <em>i</em>+1 while combine of microbatch <em>i</em> is in flight, on different streams and different SMs. Both are bulk stores from every GPU to every GPU, so both directions of every link carry both kernels. Add a second tenant (another job on the same node, as on this machine right now, or a different EP group) and three store streams share each port. Each kernel sees lower throughput; each has its own window (P2) and its own barriers (P5), so the two can lock-step: one kernel's barrier waits for its slowest warp whose stores are queued behind the other kernel's burst.</p>
+<figure>
+<svg viewBox="0 0 880 230" role="img" aria-label="Three store streams from one GPU, dispatch, combine and a foreign process, merge into the same NVLink links; the per-link counter reports a total without a source, and each kernel's barrier can wait on the other's burst">
+  <defs><marker id="p7a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker></defs>
+  <text x="20" y="24" class="head">One GPU's egress</text>
+  <rect x="20" y="40" width="230" height="40" rx="8" class="box-acc"/><text x="135" y="58" text-anchor="middle" class="head">dispatch (µbatch i+1)</text><text x="135" y="73" text-anchor="middle" class="small">stream 1 · 16 SMs · window + barriers</text>
+  <rect x="20" y="92" width="230" height="40" rx="8" class="box-type"/><text x="135" y="110" text-anchor="middle" class="head">combine (µbatch i)</text><text x="135" y="125" text-anchor="middle" class="small">stream 2 · other SMs · window + barriers</text>
+  <rect x="20" y="144" width="230" height="40" rx="8" class="box"/><text x="135" y="162" text-anchor="middle" class="head">foreign process</text><text x="135" y="177" text-anchor="middle" class="small">another job on GPUs 0–3 today</text>
+  <path d="M250 60 L340 100" class="ln-mut" marker-end="url(#p7a)"/><path d="M250 112 L340 112" class="ln-mut" marker-end="url(#p7a)"/><path d="M250 164 L340 124" class="ln-mut" marker-end="url(#p7a)"/>
+  <rect x="340" y="70" width="140" height="84" rx="8" class="box-warn"/><text x="410" y="96" text-anchor="middle" class="head">18 NVLink links</text><text x="410" y="114" text-anchor="middle" class="small">bytes interleaved</text><text x="410" y="130" text-anchor="middle" class="small">by address</text>
+  <path d="M480 112 L520 112" class="ln" marker-end="url(#p7a)"/>
+  <rect x="520" y="40" width="340" height="60" rx="8" class="box-bad"/>
+  <text x="530" y="60" class="small">NVML / CUPTI per link: TX bytes, RX bytes, replays.</text>
+  <text x="530" y="78" class="small">No stream, kernel, SM or destination. Kineto: two bars.</text>
+  <rect x="520" y="112" width="340" height="72" rx="8" class="box-ok"/>
+  <text x="530" y="132" class="small">E8: each kernel logs issue bytes per destination per µs</text>
+  <text x="530" y="150" class="small">and per-lane completion latency. Overlaying the logs shows</text>
+  <text x="530" y="168" class="small">whose waits grew during whose bursts.</text>
+  <text x="20" y="214" class="small">Hardware would answer directly with per-link queue occupancy at µs rate; that counter is not exposed.</text>
+</svg>
+<figcaption>Figure P7. The link counter is the only shared-resource sensor and it has no notion of who. Attribution has to come from the kernels' own accounting.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>Both kernels slower; NVML shows the links busy. No tool says which kernel's bytes occupied which link when, because a link counter counts bytes, not kernels, and the kernels are on the same GPU.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>Link counters are per GPU per link; there is no per-stream, per-kernel or per-SM NVLink accounting in hardware. Kineto shows two overlapping bars.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>Per-kernel issue accounting (bytes issued per destination per µs, which each kernel can log for itself because it knows the destination) plus the per-lane completion latencies; cross-correlating the two kernels' logs gives who waited behind whom. The hardware-only answer, per-link queue occupancy sampled at µs rate, would make the inference unnecessary.</p></div></div>
+<div class="row"><div class="k">Experiment E8</div><div><p>Dispatch alone, combine alone, then overlapped on two streams with the traced build of both kernels; compare each kernel's per-destination latency histograms alone versus overlapped; compute the throughput loss and attribute it by which kernel's wait times grew during the other's bursts. Repeat with an unrelated NVLink load from another process (a simple all-to-all) to model a second tenant.</p></div></div>
+</div>
+
+<div class="prob" id="p8">
+<h3>P8 · Decode: the latency regime <span class="tag bad">different problem, same kernel</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>With 64 to 256 tokens per rank, most warps handle one token or none, there is no steady state and no bandwidth to speak of. The dispatch time is a sum of latencies: launch, opening barrier (8 atomics + poll), notify (local reduction, 264 remote stores, 264 remote polls), one load, one atomic, up to eight stores and their completion, grid sync, closing barrier, PDL trigger, and on the host a PCIe mailbox read, a <code>torch.empty</code> and a launch. Everything in P3, P4 and P5 is a fixed cost here, and the whole kernel is tens of µs, shorter than FabricPerf's per-kernel GPTP handshake (5 to 10 µs) and comparable to its inter-kernel clock jitter. CUDA-graph decoding (<code>do_cpu_sync=False</code>) removes the host but not the device-side chain.</p>
+<figure>
+<svg viewBox="0 0 880 250" role="img" aria-label="The decode-regime critical path of one dispatch as a chain of segments across eight GPUs and the CPU, each tagged with the problem that inflates it">
+  <text x="20" y="24" class="head">Decode dispatch, 128 tokens per rank: a chain of latencies, nothing to overlap</text>
+  <g class="mono">
+    <rect x="20" y="44" width="70" height="44" rx="6" class="box"/><text x="55" y="63" text-anchor="middle" class="small">launch</text><text x="55" y="79" text-anchor="middle" class="small">skew</text>
+    <rect x="96" y="44" width="80" height="44" rx="6" class="box-type"/><text x="136" y="63" text-anchor="middle" class="small">① barrier</text><text x="136" y="79" text-anchor="middle" class="small">8 adds + poll</text>
+    <rect x="182" y="44" width="120" height="44" rx="6" class="box-warn"/><text x="242" y="63" text-anchor="middle" class="small">notify C–F</text><text x="242" y="79" text-anchor="middle" class="small">264 st + 264 polls</text>
+    <rect x="308" y="44" width="150" height="44" rx="6" class="box-acc"/><text x="383" y="63" text-anchor="middle" class="small">load · atomic · ≤8 stores</text><text x="383" y="79" text-anchor="middle" class="small">wait_group (1 iteration)</text>
+    <rect x="464" y="44" width="70" height="44" rx="6" class="box"/><text x="499" y="63" text-anchor="middle" class="small">grid</text><text x="499" y="79" text-anchor="middle" class="small">sync</text>
+    <rect x="540" y="44" width="80" height="44" rx="6" class="box-type"/><text x="580" y="63" text-anchor="middle" class="small">③ barrier</text><text x="580" y="79" text-anchor="middle" class="small">8 adds + poll</text>
+    <rect x="626" y="44" width="54" height="44" rx="6" class="box"/><text x="653" y="63" text-anchor="middle" class="small">PDL</text><text x="653" y="79" text-anchor="middle" class="small">trigger</text>
+    <rect x="686" y="44" width="80" height="44" rx="6" class="box-warn"/><text x="726" y="63" text-anchor="middle" class="small">PCIe</text><text x="726" y="79" text-anchor="middle" class="small">mailbox</text>
+    <rect x="772" y="44" width="88" height="44" rx="6" class="box"/><text x="816" y="63" text-anchor="middle" class="small">torch.empty</text><text x="816" y="79" text-anchor="middle" class="small">copy launch</text>
+  </g>
+  <g class="small">
+    <text x="55" y="110" text-anchor="middle">P5</text><text x="136" y="110" text-anchor="middle">P3 · P5</text><text x="242" y="110" text-anchor="middle">P3 · P4</text><text x="383" y="110" text-anchor="middle">P2 · P3 · P1</text>
+    <text x="499" y="110" text-anchor="middle">P5</text><text x="580" y="110" text-anchor="middle">P3 · P5</text><text x="726" y="110" text-anchor="middle">P4</text><text x="816" y="110" text-anchor="middle">host</text>
+  </g>
+  <line x1="20" y1="124" x2="860" y2="124" class="ln-mut"/>
+  <text x="20" y="146" class="small">Who sees what: Kineto draws one bar from "launch" to "PDL trigger" per rank and a gap to the copy kernel. Inside the bar: nothing.</text>
+  <text x="20" y="164" class="small">Scale: the whole chain is tens of µs. FabricPerf's per-kernel clock handshake costs 5–10 µs; its inter-kernel clock jitter is 36 µs.</text>
+  <text x="20" y="182" class="small">Each segment except the blue one is a fixed cost that does not shrink with fewer tokens; the blue one is one latency, not a bandwidth.</text>
+  <text x="20" y="210" class="small">E9: 1,000 iterations of the traced build, per-iteration critical path (which rank was last at ①, ②, ③), then the P3 padding patch and</text>
+  <text x="20" y="228" class="small">do_cpu_sync=False, to see which segments move. Observability here converts directly into µs per decode step.</text>
+</svg>
+<figcaption>Figure P8. The same kernel, read as a latency chain. Every box is a candidate for the critical path, and today's timeline shows the chain as one bar.</figcaption>
+</figure>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>A dispatch that "should" take 10 µs takes 40; the Kineto trace shows one kernel bar and one gap.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>Nothing resolves inside the bar. Any probing scheme with hundreds of ns of overhead per event changes the answer. Clock synchronisation has to be amortised across many kernels, not performed per kernel.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>A per-dispatch critical-path decomposition across eight GPUs and a CPU with ≈ 100 ns resolution and ≈ 20 ns per event cost: the same timeline as P5 plus host timestamps, with the clock offsets calibrated once and checked for drift, not re-derived per kernel.</p></div></div>
+<div class="row"><div class="k">Experiment E9</div><div><p>Run the traced build with 128 tokens per rank for 1,000 iterations; build the per-iteration critical path (which rank's which phase was last at each sync edge); report the distribution of each segment. Then apply the P3 padding patch and a variant with the host mailbox replaced by <code>do_cpu_sync=False</code>, and show which segments move. This is where observability pays off directly in µs.</p></div></div>
+</div>
+
+<div class="prob" id="p9">
+<h3>P9 · Links, paths, replays, and the GIN side <span class="tag warn">needs hardware access or the other node</span></h3>
+<div class="row"><div class="k">Mechanism</div><div>
+<p>NVLink is lossless through CRC and replay; a degraded lane or a replaying link shows up as a slower path for whichever addresses hash onto it, that is, as unexplained tails in P1 and P7. Across the switch, which of the four chips a flow traverses and whether two ranks' flows share a switch port depends on link assignment that the GPU never reveals. The multi-node hybrid kernels add the GIN path: a store-and-forward pipeline (scale-out send warps → NIC put → forwarding warps poll per-channel tails every six tokens and re-send over NVLink), QP sharing between channels, signal atomics for tails and barriers, and a second clock domain per node. There the fence-free, flag-free data plane is replaced by one with explicit signals, so arrival <em>is</em> observable, but at the price of a far longer chain and the clock-sync problem FabricPerf measured at 36 µs of inter-kernel jitter.</p>
+</div></div>
+<div class="row"><div class="k">Symptom today</div><div><p>Replay and recovery counters in NVML (per link, cumulative); otherwise tails. In hybrid runs: DeepEP timeout messages naming a channel and a tail value when things go badly wrong, nothing before that.</p></div></div>
+<div class="row"><div class="k">Dead end</div><div><p>No per-kernel or per-destination association for link-health counters; no NVSwitch port telemetry for users; GIN exposes completion counters per QP but no latency.</p></div></div>
+<div class="row"><div class="k">Missing</div><div><p>Address-to-link mapping (recoverable by an address sweep correlated with per-link NVML throughput, as the gaps note proposes); per-kernel snapshots of replay counters; for GIN, per-channel put-to-tail-visible latency, which the forwarding warps' polls already expose on the receiving side if timestamped.</p></div></div>
+<div class="row"><div class="k">Experiment</div><div><p>On this node: NVML replay/recovery counters sampled before and after each dispatch in E2 and E8, to exclude link health as the cause of tails; an address sweep micro-benchmark to map window offsets to links. Hybrid experiments need the second node and are listed as follow-ups in Section 4.</p></div></div>
+</div>
+
+<h2 id="s3">3. Observability challenges this workload exposes</h2>
+<p>Stated so that each is a property of memory-semantic fabrics, with DeepEP as the witness. Cross-references point to the gap numbers of the companion note.</p>
+
+<div class="grid2">
+  <div class="gap"><div class="k"><span>C1</span>Arrival without an event</div>The data plane ends at the peer's L2 with no flag, no fence and no poll. The receiver's first knowledge of any token is the closing barrier. FabricPerf's T5 does not exist; any receiver-side measurement is necessarily a hardware ingress counter. (Gaps 2, 11)</div>
+  <div class="gap"><div class="k"><span>C2</span>Completion is the only sensor, and its meaning is undefined</div>The sender's <code>wait_group</code> is the one per-token event. Whether it reports local acceptance or remote acknowledgement is not documented for remote destinations, and the answer decides whether its duration is a queue depth or a round trip. A tool must calibrate before it measures. (Gap 3)</div>
+  <div class="gap"><div class="k"><span>C3</span>One send, N destinations, one wait</div>A token is up to eight bulk stores from one shared-memory buffer, completed per lane but waited for per warp. The unit of transmission, the unit of completion and the unit of flow control are three different things. (Gaps 1, 9)</div>
+  <div class="gap"><div class="k"><span>C4</span>Flow control is a software window with no feedback</div>No credits, no receiver readiness beyond the opening barrier, a fixed window set by shared-memory size. Congestion appears only as time inside <code>wait_group</code>. The hardware's own limit on outstanding remote stores is unknown. (Gap 3)</div>
+  <div class="gap"><div class="k"><span>C5</span>Contention is addressed, not channelled</div>One 32-byte sector of counters, one barrier word per rank, one 2 KB count array per rank; and buffer rows whose link assignment is unknown. "Channel" (warp, SM, QP) is the wrong unit; destination address is the right one. (Gap 6)</div>
+  <div class="gap"><div class="k"><span>C6</span>Causality crosses ranks</div>Barriers turn a remote delay into a local wait and erase who was last. Diagnosis needs a cross-rank timeline; on one node the clocks allow it cheaply, across nodes they do not, and the kernel is too short for per-kernel sync in decode. (Gaps 2, 8)</div>
+  <div class="gap"><div class="k"><span>C7</span>The communication kernel is not alone</div>It is designed to run beside GEMMs and beside its own sibling (combine). Profilers that serialise, counters that total the device, and replay-based tools are structurally unable to see the interaction. (Gaps 6, 10)</div>
+  <div class="gap"><div class="k"><span>C8</span>Two regimes, one kernel</div>Prefill is a bandwidth problem at 0.7 ms with 17 iterations per warp; decode is a latency chain at tens of µs with one iteration. The sampling budget, the acceptable probe cost and the value of clock sync differ by an order of magnitude; one tool must serve both. (Gap 8)</div>
+  <div class="gap"><div class="k"><span>C9</span>Shared memory is not free for probes</div>FabricPerf parks timestamps in shared memory because NCCL leaves it unused. DeepEP uses all 227 KB. Tracing must give up one dispatch warp's slot, live in registers, or stream to L2-resident global memory with care about perturbing the traffic it measures.</div>
+  <div class="gap"><div class="k"><span>C10</span>The library already knows what the hardware hides</div>DeepEP computes destination rank, byte count and region for every store before issuing it. A tracing hook at that point gives the address-classified accounting that a binary instrumenter would have to reconstruct. Cooperative instrumentation is cheaper and more exact than external probing here, and it is portable to NCCL's device API.</div>
+</div>
+
+<h2 id="s4">4. Experiment programme</h2>
+<p>Ordered so that each experiment's instrumentation is validated by the previous one. All run on this node; items marked ⟂ need the second node or hardware access.</p>
+
+<table>
+<thead><tr><th>#</th><th>Question</th><th>Manipulation</th><th>Instrumentation</th><th>Metric and expected signature</th><th>Problems</th></tr></thead>
+<tbody>
+<tr><td>E1</td><td>What does bulk-store completion mean to a peer? What is the outstanding-store limit?</td><td>Standalone kernel; size 16 B to 64 KB; destination self / 7 peers; N back-to-back issues without waiting</td><td><code>%globaltimer</code> and <code>clock64</code> around <code>wait_group</code>, <code>wait_group.read</code>, <code>fence.acq_rel.sys</code>; ping-pong reference</td><td>Latency curves; if wait_group ≈ half of ping-pong it is a remote ack; knee of issue time vs N is the credit limit</td><td>P2, C2, C4</td></tr>
+<tr><td>E0</td><td>Is dispatch throughput window-bound or link-bound?</td><td><code>num_sms</code> 2 to 32, tokens 256 to 4096, uniform routing</td><td>Unmodified kernel, <code>bench_kineto</code></td><td>GB/s vs in-flight bytes; linear slope = 1/latency, plateau = link limit</td><td>P2</td></tr>
+<tr><td>E2</td><td>Does a hot destination slow traffic to idle ones? Which head-of-line blocking?</td><td><code>get_unbalanced_scores</code> ratio 1, 2, 4, 8; patched <code>wait_group.read</code> variant</td><td>Per-lane store issue and completion trace (4.2)</td><td>Per-(src,dst) latency per 50 µs bin; idle-rank latency flat → warp-level HOL only; rising → fabric HOL</td><td>P1, P2</td></tr>
+<tr><td>E3</td><td>Cost of the counter sector and the barrier word</td><td>Padding patch; warp-aggregated atomics; per-sender barrier words</td><td>Per-lane atomic latency; barrier arrive/release timestamps</td><td>Latency vs concurrent warps; difference prefill vs decode</td><td>P3, P8</td></tr>
+<tr><td>E4</td><td>Are control stores delayed by data? Does address pick a path?</td><td>Notify alone vs full vs skewed; relocate receive array</td><td>SM 0 timestamps on sender (phase E) and receiver (phase F per slot); one-time inter-GPU clock calibration</td><td>One-way latency distributions; tail inflation under load; shift with address</td><td>P4, C6</td></tr>
+<tr><td>E5</td><td>Who pays for compute overlap, through which resource?</td><td>GEMM at 0/25/50/100 % HBM, on all / receivers / senders; buffer size fits L2 or not</td><td>Per-lane trace + CUPTI PM sampling (DRAM, L2, NVLink) at 10 µs</td><td>Load latency vs store latency vs atomic latency inflation, separated by where the GEMM runs</td><td>P6</td></tr>
+<tr><td>E6</td><td>How much fabric idles because of skew?</td><td>CPU sleep on one rank: 0 / 20 / 100 / 500 µs</td><td>Cross-rank timeline: entry, barrier arrive/release, phases, closing</td><td>Idle at ① equals injected skew; data plane start is global-max of entries</td><td>P5</td></tr>
+<tr><td>E7</td><td>Tail: scheduling or path?</td><td>Uniform vs skewed routing</td><td>Per-warp last completion; per-warp destination histogram</td><td>Tail fraction; variance explained by destination mix</td><td>P5, P1</td></tr>
+<tr><td>E8</td><td>Attribution when two kernels share links</td><td>Dispatch and combine alone vs overlapped; plus foreign all-to-all process</td><td>Traced build of both kernels; NVML per-link counters</td><td>Per-kernel latency histograms alone vs together; who waited during whose burst</td><td>P7</td></tr>
+<tr><td>E9</td><td>Decode critical path</td><td>128 tokens, 1,000 iterations; padding patch; <code>do_cpu_sync</code> on/off</td><td>Full timeline + host timestamps; calibrated offsets</td><td>Segment distribution; which segments move under each patch</td><td>P8, P3, P4, P5</td></tr>
+<tr><td>E10 ⟂</td><td>Address-to-link mapping; link health vs tails</td><td>Address sweep; sample NVML replay counters around E2/E8</td><td>NVML per-link throughput and error counters</td><td>Offset → link table; exclusion of link faults as tail cause</td><td>P9</td></tr>
+<tr><td>E11 ⟂</td><td>Hybrid pipeline: put-to-tail latency, forward-warp idle, QP sharing</td><td>Two nodes; <code>num_qps</code>; <code>kScaleoutUpdateInterval</code></td><td>Timestamps at tail update (sender) and tail poll success (forwarder); GIN counters</td><td>Per-channel scale-out latency; forward idle fraction; cross-node clock drift</td><td>P9</td></tr>
+</tbody>
+</table>
+
+<h3>4.1 Practical constraints on this node</h3>
+<ul>
+  <li>At the time of writing GPUs 1 to 3 are busy with another user's processes (100 % utilisation, ≈ 77 GB used each) and GPUs 4 to 7 are idle. Eight-GPU experiments must wait or be scheduled with that user; four-GPU runs on 4 to 7 are possible now (same CPU socket, same switch fabric). Per the machine rules, nothing on 1 to 3 is to be touched.</li>
+  <li>DeepEP is installed in the <code>deepep</code> conda env (see install-deepep.md); the traced kernels are JIT-compiled from headers, so the instrumentation patch needs no reinstall, only a cache flush.</li>
+  <li><code>bench_kineto</code> flushes L2 and runs an all-reduce barrier between iterations; both must be disabled for E5 and E8, where the cache state and the overlap are the subject.</li>
+  <li>CUPTI PM sampling and NVML can run concurrently with the kernels; Nsight Compute cannot be used on the cooperative kernels at all.</li>
+</ul>
+
+<h4>Running on GPUs 4–7 only</h4>
+<p>Every single-node experiment (E0 to E9) runs with four ranks. GPUs 4 to 7 sit on one CPU socket and reach each other through the same four NVSwitch chips with the same 18 links each, so the fabric under test is the same; only the group is smaller. What changes, and how much it matters:</p>
+<table>
+<thead><tr><th>Quantity</th><th>8 ranks</th><th>4 ranks (GPUs 4–7)</th><th>Consequence for the experiments</th></tr></thead>
+<tbody>
+<tr><td>Experts per rank</td><td>32</td><td>64</td><td>Expert-level counts and padding differ; irrelevant to the fabric questions.</td></tr>
+<tr><td>Unique destination ranks per token</td><td>≈ 5.29</td><td>≈ 3.61</td><td>Fewer lanes store per token (≤ 4). Warp-level head-of-line blocking (P1-A) has at most two idle destinations to block instead of six: the effect is present but smaller per warp.</td></tr>
+<tr><td>Senders converging on one receiver</td><td>7</td><td>3</td><td>Incast oversubscription of the hot rank's ingress is 3× not 7×. Fabric-level blocking (P1-B) is still testable, since the sender-side credit sharing it hinges on does not depend on rank count, but switch-level effects of many flows sharing one egress are weaker and two concurrent incasts on different destinations cannot be set up.</td></tr>
+<tr><td>Bytes out per GPU per dispatch</td><td>≈ 314 MB (274 remote)</td><td>≈ 214 MB (161 remote)</td><td>Dispatch is shorter (≈ 0.4 ms at 400 GB/s); absolute GB/s and times are not comparable with 8-rank numbers.</td></tr>
+<tr><td>Maximum in-flight bytes</td><td>≈ 18 MB</td><td>≈ 12.5 MB</td><td>The window closes at ≈ 31 µs of completion latency instead of ≈ 46 µs. E0's knee moves; the mechanism and the test are unchanged.</td></tr>
+<tr><td>Returning atomics on the counter sector</td><td>≈ 21,700 on 8 ints</td><td>≈ 14,800 on 4 ints</td><td>P3 contention is lower in degree; E3 still measures it, and the padding comparison is still valid.</td></tr>
+<tr><td>Barrier incast</td><td>8 adds per word</td><td>4 adds per word</td><td>Smaller arrive-to-release cost; the per-sender-word patch in E3 is still a clean comparison.</td></tr>
+<tr><td>Control-plane stores per rank</td><td>264</td><td>260 (4 + 256)</td><td>P4 and E4 unchanged.</td></tr>
+<tr><td>Unbalanced-gate generator</td><td>ratio ≤ 3 keeps ≥ 3 destination ranks per token</td><td>ratio 2 or 3 gives at most 2 destinations per token; ratio ≥ 4 sends every token to a single rank</td><td>With four ranks, use ratio ∈ {1, 1.5, 2, 3} for E2 and treat ratio 4 as a separate single-destination case. The precise generator's bound is <code>min(num_topk, num_ranks, floor((num_ranks − 1)/ratio) + 1)</code>.</td></tr>
+<tr><td>Clock calibration</td><td>8 GPUs, two sockets</td><td>4 GPUs, one socket</td><td>Simpler and more stable. Cross-socket asymmetry of the host paths is not exercised; NVLink paths do not depend on sockets.</td></tr>
+</tbody>
+</table>
+<p><b>The one real confound.</b> GPUs 0 to 3 are running another user's job. If that job communicates over NVLink it shares the same NVSwitch chips, and its traffic appears in our measurements as unexplained latency, exactly the P7 situation but uncontrolled. Mitigation: sample NVML NVLink throughput and replay counters on GPUs 0 to 3 during every run (read-only, no interference with those processes), and discard or annotate intervals where they are non-zero. On the host side, pin our processes to socket 1 cores (threads 52–103 and 156–207) so that CPU contention from the other job does not add launch skew (E6) or mailbox latency (E9).</p>
+<p><b>What four GPUs cannot show.</b> Scaling of the atomic and barrier costs with rank count beyond a two-point comparison; interaction of multiple concurrent incasts through the switch; whether the 8-rank window behaves differently once the fan-out per token exceeds four. These are confirmation runs, not discovery runs: do the mechanism work on GPUs 4 to 7, then repeat E2, E3 and E0 on all eight GPUs when they are free. The lane trace from the 4-rank runs tells which of the three is worth the eight-GPU time.</p>
+<p><b>Unaffected entirely:</b> E1 (completion semantics and credit limit, needs two GPUs), E4 (control behind data), E5 (compute interference), E8 (dispatch/combine overlap) and the instrumentation validation in E0.</p>
+
+<h3>4.2 The instrumentation patch</h3>
+<p>Everything above needs one mechanism: per-lane timestamps at a handful of points in <code>dispatch_impl</code> (and the mirror points in <code>combine_impl</code>), buffered and flushed without disturbing the traffic.</p>
+<figure>
+<svg viewBox="0 0 880 290" role="img" aria-label="Data path of the instrumentation: per-lane globaltimer reads in the kernel, one coalesced record per token per warp into a global trace buffer, per-rank collection, one-time clock calibration, merged timeline and derived metrics">
+  <defs><marker id="i1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-acc"/></marker></defs>
+  <text x="20" y="24" class="head">In the kernel (each rank)</text>
+  <rect x="20" y="40" width="222" height="110" rx="8" class="box-acc"/>
+  <text x="30" y="60" class="head">lane timestamps</text>
+  <g class="small"><text x="30" y="80">%globaltimer before/after wait_group</text><text x="30" y="96">clock64 around atomicAdd</text><text x="30" y="112">store issue: t, dst, bytes</text><text x="30" y="128">SM 0: phases, barrier arrive/release</text><text x="30" y="144">kept in registers for the iteration</text></g>
+  <path d="M242 95 L270 95" class="ln-acc" marker-end="url(#i1)"/><text x="256" y="84" text-anchor="middle" class="small">32 B</text>
+  <rect x="270" y="40" width="170" height="110" rx="8" class="box"/>
+  <text x="280" y="60" class="head">trace buffer</text>
+  <g class="small"><text x="280" y="80">global, L2::evict_last</text><text x="280" y="96">one record per token per warp</text><text x="280" y="112">4,096 × 32 B = 128 KB per rank</text><text x="280" y="128">vs 300 MB of payload</text><text x="280" y="144">(or a stolen smem slot: control)</text></g>
+  <path d="M440 95 L490 95" class="ln-acc" marker-end="url(#i1)"/><text x="465" y="84" text-anchor="middle" class="small">after</text>
+  <text x="490" y="24" class="head">On the host</text>
+  <rect x="490" y="40" width="170" height="110" rx="8" class="box"/>
+  <text x="500" y="60" class="head">per-rank collection</text>
+  <g class="small"><text x="500" y="80">8 trace buffers</text><text x="500" y="96">+ host timestamps (mailbox,</text><text x="500" y="112">  torch.empty, launch)</text><text x="500" y="128">+ NVML link counters</text><text x="500" y="144">+ CUPTI PM samples</text></g>
+  <path d="M660 95 L710 95" class="ln-acc" marker-end="url(#i1)"/>
+  <rect x="710" y="40" width="150" height="110" rx="8" class="box-ok"/>
+  <text x="720" y="60" class="head">merged timeline</text>
+  <g class="small"><text x="720" y="80">per (src, dst) latency</text><text x="720" y="96">in-flight bytes per dst</text><text x="720" y="112">warp stall and tail CDF</text><text x="720" y="128">rank phase timeline</text><text x="720" y="144">critical path per dispatch</text></g>
+  <rect x="490" y="170" width="200" height="60" rx="8" class="box-type"/>
+  <text x="500" y="190" class="head">clock calibration, per run</text>
+  <text x="500" y="208" class="small">ping-pong every GPU pair before</text>
+  <text x="500" y="224" class="small">and after each kernel (clocks drift)</text>
+  <path d="M690 200 L710 160" class="ln-mut"/>
+  <rect x="20" y="170" width="420" height="60" rx="8" class="box-warn"/>
+  <text x="30" y="190" class="head">budget</text>
+  <text x="30" y="208" class="small">2 timer reads + 1 coalesced store per token per warp vs a 17 µs iteration:</text>
+  <text x="30" y="224" class="small">0.1–1 % measured in E0. Shared memory is untouched in the default build.</text>
+  <text x="20" y="262" class="small">Local-clock metrics (latency, stall, atomic) need no calibration at all; only the cross-rank timeline and E4 use the offsets.</text>
+</svg>
+<figcaption>Figure 3. The instrumentation data path. Everything the experiments need comes from one record per token per warp plus a one-time clock calibration.</figcaption>
+</figure>
+<div class="kv">
+  <div class="k">points</div><div>before <code>tma_store_wait()</code> at the top of the loop and after it (per lane; a lane that issued no store returns immediately, which is itself the "no destination" marker); before and after the slot <code>atomicAdd</code>; after <code>mbarrier_wait</code> (load latency); just before each lane's <code>tma_store_1d</code> (issue time, destination, bytes); SM 0: phase C done, D done, E issued, each F slot ready, H done; barrier arrive and release on both barriers; kernel entry and the line after the closing barrier.</div>
+  <div class="k">clock</div><div><code>%globaltimer</code> (32 ns granularity on this hardware per FabricPerf; fine for µs waits) for anything compared across GPUs; <code>clock64</code> for atomic latency.</div>
+  <div class="k">record</div><div>16 bytes: 40-bit timestamp, 8-bit event, 8-bit destination, 32-bit token index, 16-bit duration or bytes. Per warp per dispatch ≈ 17 tokens × (1 wait + 1 atomic + 1 load + ≤ 8 issues) ≈ 190 records ≈ 3 KB.</div>
+  <div class="k">buffer</div><div>Shared memory is full. Option A: launch with 14 dispatch warps instead of 15 and use the freed 14,496 B slot as a per-SM trace ring (fits 900 records, enough for a dispatch at 4,096 tokens on 14 warps × 17 tokens if issue records are coalesced to one per token with a destination mask). Option B: registers for the current iteration's timestamps and one coalesced 32-byte store per token per warp to a global trace buffer with <code>L2::evict_last</code>: 4,096 × 32 B = 128 KB per GPU per dispatch, negligible against 300 MB, and no shared-memory cost. B is the default; A is the control that shows B does not perturb.</div>
+  <div class="k">cost</div><div>Two <code>globaltimer</code> reads and one coalesced store per token per warp against a 40 µs iteration: well under 1 %. Validate by comparing E0 throughput with and without tracing.</div>
+  <div class="k">cross-GPU time</div><div>Once per session: ping-pong between every GPU pair through the NCCL window, both directions, 1,000 rounds; offset = half-RTT corrected; report the asymmetry estimate from the two directions as the error bar rather than assuming symmetry. Re-check at the end of the session for drift.</div>
+  <div class="k">analysis</div><div>Merge per-rank traces into one timeline; derive per-(src, dst) latency series, in-flight bytes series, warp stall series, per-rank phase timeline, and the critical path per dispatch. Plots: latency-versus-time per destination; in-flight bytes vs throughput; tail CDF per warp.</div>
+</div>
+
+<h2 id="s5">5. What a tool must provide, and where this differs from FabricPerf</h2>
+<div class="card">
+<p><b>Information that resolves the problems above, in order of how directly it can be had today.</b></p>
+<ol>
+  <li><b>Per-(source, destination, region) issue accounting with per-destination completion latency</b>, logged by the library at the point where it already knows all three. Available now with the patch; the gap is only that "completion" needs calibration (E1). This is the memory-semantic completion queue.</li>
+  <li><b>A cross-rank in-kernel timeline</b> with a one-time clock calibration per node and explicit asymmetry error bars, plus clock-free arrival ordering at barriers via fetch-add. Available now on one node; needs the GIN path's signals, timestamped on arrival, across nodes.</li>
+  <li><b>Window state</b>: in-flight bytes per destination (derived from 1) and the hardware's outstanding-store limit (E1). Turns "nothing is busy" into "the window is closed".</li>
+  <li><b>Address-to-path attribution</b>: window offset → L2 slice and NVLink link, recovered by sweeps against per-link counters. Needed to reason about P3 and P4 instead of trial and error.</li>
+  <li><b>Receiver ingress per source</b> and <b>per-link queue occupancy</b> at µs resolution: hardware only. NVSwitch port counters and NVLink TX credit stall counters exist in the silicon; exposing them per kernel, or readable from a device kernel, is the request to make of the vendor and the thing an open fabric (UALink, SUE) could specify.</li>
+  <li><b>Per-SM-set attribution of shared memory-system counters</b>, so that a communication kernel and a GEMM sharing a GPU can each be charged for their L2 and HBM use. Hardware again; the software substitute is 1 plus time-correlation.</li>
+</ol>
+<figure>
+<svg viewBox="0 0 880 280" role="img" aria-label="FabricPerf's measurement edge, a fence and flag on the sender and a poll on the receiver aligned by per-kernel clock sync, next to this programme's edge, a store issue and a completion wait on the sender alone with a session-calibrated cross-rank timeline as a secondary signal">
+  <defs>
+    <marker id="c1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-warn"/></marker>
+    <marker id="c2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-acc"/></marker>
+  </defs>
+  <text x="20" y="24" class="head">FabricPerf on NCCL Simple protocol</text>
+  <text x="20" y="52" class="small">sender clock</text><line x1="110" y1="48" x2="420" y2="48" class="ln"/>
+  <text x="20" y="122" class="small">receiver clock</text><line x1="110" y1="118" x2="420" y2="118" class="ln"/>
+  <circle cx="140" cy="48" r="5" class="fill-acc"/><text x="140" y="38" text-anchor="middle" class="mono">T3 st</text>
+  <circle cx="230" cy="48" r="5" class="fill-warn"/><text x="230" y="38" text-anchor="middle" class="mono">T4 fence+flag</text>
+  <path d="M236 52 L330 114" class="ln-warn" marker-end="url(#c1)"/>
+  <circle cx="340" cy="118" r="5" class="fill-bad"/><text x="340" y="138" text-anchor="middle" class="mono">T5 poll hit</text>
+  <rect x="110" y="70" width="110" height="28" rx="6" class="box-type"/><text x="165" y="88" text-anchor="middle" class="small">GPTP per kernel</text>
+  <g class="small">
+    <text x="20" y="170">needs: fence, flag, poll loop at fixed places</text>
+    <text x="20" y="186">two clocks, symmetric delay, 5–10 µs per kernel</text>
+    <text x="20" y="202">unit: one channel's fence-delimited chunk</text>
+    <text x="20" y="218">receiver participates; fast samples discarded</text>
+  </g>
+  <rect x="20" y="236" width="400" height="30" rx="6" class="box-bad"/><text x="220" y="256" text-anchor="middle" class="small">none of the three landmarks exists on DeepEP's data plane</text>
+
+  <line x1="450" y1="20" x2="450" y2="270" class="ln-mut"/>
+
+  <text x="470" y="24" class="head">This programme on DeepEP</text>
+  <text x="470" y="52" class="small">sender clock</text><line x1="560" y1="48" x2="860" y2="48" class="ln"/>
+  <text x="470" y="122" class="small">receiver</text><line x1="560" y1="118" x2="860" y2="118" class="ln-mut"/>
+  <circle cx="590" cy="48" r="5" class="fill-acc"/><text x="590" y="38" text-anchor="middle" class="mono">issue (lane k)</text>
+  <path d="M596 48 L744 48" class="ln-acc" marker-end="url(#c2)"/>
+  <circle cx="750" cy="48" r="5" class="fill-ok"/><text x="750" y="38" text-anchor="middle" class="mono">wait_group returns</text>
+  <text x="670" y="66" text-anchor="middle" class="small">completion latency per destination, one clock</text>
+  <text x="710" y="112" text-anchor="middle" class="small">no event until the closing barrier</text>
+  <rect x="560" y="70" width="150" height="28" rx="6" class="box-type"/><text x="635" y="88" text-anchor="middle" class="small">calibrate around each run</text>
+  <g class="small">
+    <text x="470" y="170">needs: calibrated meaning of "complete" (E1)</text>
+    <text x="470" y="186">one clock for the primary signal; offsets only for</text>
+    <text x="470" y="202">the cross-rank timeline, re-measured around each run</text>
+    <text x="470" y="218">unit: (source, destination, token); address is the key</text>
+  </g>
+  <rect x="470" y="236" width="390" height="30" rx="6" class="box-ok"/><text x="665" y="256" text-anchor="middle" class="small">logged by the library, which already knows peer, bytes and region</text>
+</svg>
+<figcaption>Figure 4. The measurement edge that each design relies on. FabricPerf's spans two devices and a protocol; this one stays on the sender and attaches to the only event the data plane has.</figcaption>
+</figure>
+<p><b>Relation to FabricPerf.</b> FabricPerf measures a protocol that has a fence, a flag and a poll per channel step, aligns two clocks per kernel, and models the fabric as memory traffic. DeepEP has none of the three landmarks on its data plane, overlaps with compute by design, and runs in a regime (decode) where per-kernel clock sync costs more than the kernel. The programme above therefore inverts the design: one-clock sender-side completion as the primary signal, calibrated once; cross-rank time as a secondary, session-calibrated signal; address rather than channel as the unit of attribution; and cooperative instrumentation inside the communication library rather than binary probes around it. FabricPerf's two findings, channel imbalance and LLC eviction, reappear here as P5 and P6, but each with a cause the experiments can name.</p>
+<p style="margin:0"><b>Not this:</b> adding fences and flags to DeepEP's data plane so that T1 to T5 can be attached. That measures a different, slower protocol.</p>
+</div>
+
+<div class="rq"><b>Research questions this programme would answer.</b> (1) Does NVLink/NVSwitch exhibit victim-flow head-of-line blocking under destination incast, and how much of DeepEP's incast penalty is the fabric versus the one-token window? (2) What is the completion semantics and the outstanding-store credit limit of bulk asynchronous stores to peer memory, and can their wait time serve as a calibrated congestion signal? (3) How much of overlapped MoE time is lost to compute-communication interference, on which side, through which resource? (4) In the decode regime, which µs belong to synchronisation, to address-serialised atomics, to control-plane queueing and to the host, and does fixing the layout move them?</div>
+
+<h2 id="s6">Appendix · Numbers used</h2>
+<table>
+<thead><tr><th>Quantity</th><th>Value</th><th>Derivation</th></tr></thead>
+<tbody>
+<tr><td>Unique destination ranks per token</td><td>≈ 5.29</td><td>8 × (1 − C(224,8)/C(256,8)), the same formula as <code>get_theoretical_num_sms</code>; the dispatch page's "≈ 2,700 tokens per peer" is 4,096 × 5.29 / 8</td></tr>
+<tr><td>(token, destination) pairs per GPU</td><td>≈ 21,700</td><td>4,096 × 5.29; equals the number of returning atomics and of bulk stores</td></tr>
+<tr><td>Bytes per token store</td><td>14,464</td><td>14,336 hidden + 112 metadata, aligned to 64</td></tr>
+<tr><td>Bytes out per GPU per dispatch</td><td>≈ 314 MB total, ≈ 274 MB over NVLink</td><td>21,700 × 14,464; 7/8 remote</td></tr>
+<tr><td>Dispatch time at 400 GB/s</td><td>≈ 0.68 ms</td><td>274 MB / 400 GB/s; H100 NVLink ≈ 450 GB/s per direction theoretical, ≈ 0.9 efficiency in DeepEP's model</td></tr>
+<tr><td>Dispatch warps per GPU</td><td>240</td><td>15 per SM × 16 SMs; tokens per warp ≈ 17</td></tr>
+<tr><td>Maximum in-flight bytes per GPU</td><td>≈ 18 MB</td><td>240 × 5.29 × 14,464</td></tr>
+<tr><td>Bandwidth-delay product</td><td>4 MB per 10 µs of latency</td><td>at 400 GB/s; window closes when completion latency ≈ 45 µs</td></tr>
+<tr><td>Iteration time on a saturated fabric</td><td>≈ 40 µs</td><td>0.68 ms / 17</td></tr>
+<tr><td>Control-plane stores per rank per dispatch</td><td>264 remote 8-byte stores, 16 barrier atomics</td><td>8 rank counts + 256 expert counts; 8 adds per barrier</td></tr>
+<tr><td>Slot counters</td><td>8 ints = 32 bytes in one line</td><td><code>EPSignals::scaleup_atomic_sender_count</code></td></tr>
+<tr><td>Shared memory per SM</td><td>232,448 B = 1,536 notify + 15 × 14,496 staging</td><td>dispatch.hpp launch computation</td></tr>
+<tr><td>Decode example</td><td>128 tokens per rank, ≤ 1 token per warp</td><td>128 of 240 warps active</td></tr>
+</tbody>
+</table>
+
+<p class="meta">Written from reading DeepEP V2.5 and FabricPerf in full on 2026-10-12. No measurement has been run; the GPU-availability note in §4.1 reflects nvidia-smi at that time. Companion notes: deepep-dispatch.html (mechanics), observability-gaps-memory-semantic-fabrics.html (general gaps), install-deepep.md.</p>
+</div></main>
+</div>
+</body>
+</html>

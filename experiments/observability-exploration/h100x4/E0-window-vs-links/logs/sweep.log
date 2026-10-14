@@ -1,0 +1,126 @@
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 2 --num-tokens 256 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms2_tok256.pt
+   rank 0: dispatch    164.0 us untraced,    165.3 us traced (+0.8%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 61
+   rank 1: dispatch    163.3 us untraced,    164.6 us traced (+0.8%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 60
+   rank 2: dispatch    163.4 us untraced,    164.7 us traced (+0.8%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 61
+   rank 3: dispatch    162.3 us untraced,    163.7 us traced (+0.9%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 62
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms2_tok256.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 2 --num-tokens 1024 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms2_tok1024.pt
+   rank 0: dispatch    622.3 us untraced,    627.2 us traced (+0.8%), E[k]=3.63, dst_counts=[931, 930, 930, 930], remote GB/s ~ 65
+   rank 1: dispatch    621.6 us untraced,    626.4 us traced (+0.8%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 65
+   rank 2: dispatch    621.7 us untraced,    626.5 us traced (+0.8%), E[k]=3.63, dst_counts=[929, 929, 928, 928], remote GB/s ~ 65
+   rank 3: dispatch    620.1 us untraced,    625.1 us traced (+0.8%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 65
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms2_tok1024.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 2 --num-tokens 4096 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms2_tok4096.pt
+   rank 0: dispatch   2424.0 us untraced,   2444.0 us traced (+0.8%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 66
+   rank 1: dispatch   2423.0 us untraced,   2443.0 us traced (+0.8%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 66
+   rank 2: dispatch   2423.0 us untraced,   2443.0 us traced (+0.8%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 66
+   rank 3: dispatch   2423.0 us untraced,   2443.0 us traced (+0.8%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 66
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms2_tok4096.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 4 --num-tokens 256 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms4_tok256.pt
+   rank 0: dispatch     89.1 us untraced,     89.9 us traced (+1.0%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 113
+   rank 1: dispatch     88.9 us untraced,     89.7 us traced (+0.9%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 110
+   rank 2: dispatch     88.2 us untraced,     88.8 us traced (+0.7%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 112
+   rank 3: dispatch     87.5 us untraced,     88.3 us traced (+0.8%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 115
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms4_tok256.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 4 --num-tokens 1024 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms4_tok1024.pt
+   rank 0: dispatch    320.6 us untraced,    323.4 us traced (+0.9%), E[k]=3.63, dst_counts=[931, 930, 930, 930], remote GB/s ~ 126
+   rank 1: dispatch    320.8 us untraced,    323.3 us traced (+0.8%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 126
+   rank 2: dispatch    319.7 us untraced,    322.1 us traced (+0.8%), E[k]=3.63, dst_counts=[929, 929, 928, 928], remote GB/s ~ 126
+   rank 3: dispatch    320.2 us untraced,    322.6 us traced (+0.8%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 126
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms4_tok1024.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 4 --num-tokens 4096 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms4_tok4096.pt
+   rank 0: dispatch   1225.0 us untraced,   1235.0 us traced (+0.8%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 131
+   rank 1: dispatch   1225.0 us untraced,   1235.0 us traced (+0.8%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 131
+   rank 2: dispatch   1225.0 us untraced,   1235.0 us traced (+0.8%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 131
+   rank 3: dispatch   1224.0 us untraced,   1234.0 us traced (+0.8%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 131
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms4_tok4096.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 8 --num-tokens 256 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms8_tok256.pt
+   rank 0: dispatch     55.3 us untraced,     55.5 us traced (+0.4%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 181
+   rank 1: dispatch     54.8 us untraced,     55.0 us traced (+0.5%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 179
+   rank 2: dispatch     54.7 us untraced,     55.0 us traced (+0.6%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 181
+   rank 3: dispatch     53.7 us untraced,     54.0 us traced (+0.6%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 188
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms8_tok256.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 8 --num-tokens 1024 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms8_tok1024.pt
+   rank 0: dispatch    179.0 us untraced,    180.0 us traced (+0.6%), E[k]=3.63, dst_counts=[931, 930, 930, 930], remote GB/s ~ 225
+   rank 1: dispatch    177.9 us untraced,    178.9 us traced (+0.6%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 227
+   rank 2: dispatch    178.4 us untraced,    179.2 us traced (+0.4%), E[k]=3.63, dst_counts=[929, 929, 928, 928], remote GB/s ~ 226
+   rank 3: dispatch    177.7 us untraced,    178.7 us traced (+0.6%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 228
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms8_tok1024.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 8 --num-tokens 4096 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms8_tok4096.pt
+   rank 0: dispatch    660.7 us untraced,    665.0 us traced (+0.7%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 243
+   rank 1: dispatch    659.8 us untraced,    664.2 us traced (+0.7%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 243
+   rank 2: dispatch    660.0 us untraced,    664.5 us traced (+0.7%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 243
+   rank 3: dispatch    659.1 us untraced,    663.6 us traced (+0.7%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 243
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms8_tok4096.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 12 --num-tokens 256 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms12_tok256.pt
+   rank 0: dispatch     54.7 us untraced,     55.1 us traced (+0.7%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 183
+   rank 1: dispatch     54.5 us untraced,     54.8 us traced (+0.6%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 180
+   rank 2: dispatch     54.2 us untraced,     54.6 us traced (+0.6%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 183
+   rank 3: dispatch     53.6 us untraced,     53.9 us traced (+0.6%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 188
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms12_tok256.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 12 --num-tokens 1024 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms12_tok1024.pt
+   rank 0: dispatch    175.1 us untraced,    175.6 us traced (+0.3%), E[k]=3.63, dst_counts=[931, 930, 930, 930], remote GB/s ~ 230
+   rank 1: dispatch    174.6 us untraced,    174.9 us traced (+0.2%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 232
+   rank 2: dispatch    174.5 us untraced,    174.8 us traced (+0.2%), E[k]=3.63, dst_counts=[929, 929, 928, 928], remote GB/s ~ 231
+   rank 3: dispatch    173.9 us untraced,    174.2 us traced (+0.2%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 232
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms12_tok1024.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 12 --num-tokens 4096 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms12_tok4096.pt
+   rank 0: dispatch    635.2 us untraced,    635.8 us traced (+0.1%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 252
+   rank 1: dispatch    634.2 us untraced,    634.8 us traced (+0.1%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 253
+   rank 2: dispatch    634.4 us untraced,    635.1 us traced (+0.1%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 253
+   rank 3: dispatch    633.9 us untraced,    634.6 us traced (+0.1%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 252
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms12_tok4096.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 16 --num-tokens 256 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms16_tok256.pt
+   rank 0: dispatch     53.0 us untraced,     53.4 us traced (+0.7%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 189
+   rank 1: dispatch     52.4 us untraced,     52.9 us traced (+1.0%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 187
+   rank 2: dispatch     52.2 us untraced,     52.6 us traced (+0.7%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 190
+   rank 3: dispatch     51.7 us untraced,     52.2 us traced (+1.0%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 195
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms16_tok256.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 16 --num-tokens 1024 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms16_tok1024.pt
+   rank 0: dispatch    165.4 us untraced,    165.8 us traced (+0.2%), E[k]=3.63, dst_counts=[931, 930, 930, 930], remote GB/s ~ 244
+   rank 1: dispatch    165.0 us untraced,    165.3 us traced (+0.2%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 245
+   rank 2: dispatch    164.4 us untraced,    164.8 us traced (+0.3%), E[k]=3.63, dst_counts=[929, 929, 928, 928], remote GB/s ~ 245
+   rank 3: dispatch    164.3 us untraced,    164.8 us traced (+0.3%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 246
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms16_tok1024.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 16 --num-tokens 4096 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms16_tok4096.pt
+   rank 0: dispatch    599.0 us untraced,    599.5 us traced (+0.1%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 268
+   rank 1: dispatch    598.5 us untraced,    598.9 us traced (+0.1%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 268
+   rank 2: dispatch    598.1 us untraced,    598.7 us traced (+0.1%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 268
+   rank 3: dispatch    597.8 us untraced,    598.3 us traced (+0.1%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 268
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms16_tok4096.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 24 --num-tokens 256 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms24_tok256.pt
+   rank 0: dispatch     53.4 us untraced,     53.6 us traced (+0.4%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 188
+   rank 1: dispatch     53.0 us untraced,     53.2 us traced (+0.3%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 185
+   rank 2: dispatch     52.2 us untraced,     52.3 us traced (+0.0%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 190
+   rank 3: dispatch     51.9 us untraced,     52.0 us traced (+0.2%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 194
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms24_tok256.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 24 --num-tokens 1024 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms24_tok1024.pt
+   rank 0: dispatch    163.5 us untraced,    164.9 us traced (+0.8%), E[k]=3.63, dst_counts=[931, 930, 930, 930], remote GB/s ~ 247
+   rank 1: dispatch    162.5 us untraced,    163.9 us traced (+0.8%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 249
+   rank 2: dispatch    162.3 us untraced,    163.7 us traced (+0.8%), E[k]=3.63, dst_counts=[929, 929, 928, 928], remote GB/s ~ 248
+   rank 3: dispatch    162.0 us untraced,    163.3 us traced (+0.8%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 250
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms24_tok1024.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 24 --num-tokens 4096 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms24_tok4096.pt
+   rank 0: dispatch    582.5 us untraced,    582.0 us traced (-0.1%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 275
+   rank 1: dispatch    582.1 us untraced,    581.4 us traced (-0.1%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 276
+   rank 2: dispatch    580.9 us untraced,    580.6 us traced (-0.1%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 276
+   rank 3: dispatch    581.1 us untraced,    580.6 us traced (-0.1%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 275
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms24_tok4096.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 32 --num-tokens 256 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms32_tok256.pt
+   rank 0: dispatch     51.0 us untraced,     51.6 us traced (+1.2%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 196
+   rank 1: dispatch     50.5 us untraced,     51.0 us traced (+1.0%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 194
+   rank 2: dispatch     50.1 us untraced,     50.6 us traced (+0.9%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 198
+   rank 3: dispatch     49.7 us untraced,     50.3 us traced (+1.1%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 203
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms32_tok256.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 32 --num-tokens 1024 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms32_tok1024.pt
+   rank 0: dispatch    160.1 us untraced,    160.8 us traced (+0.4%), E[k]=3.63, dst_counts=[931, 930, 930, 930], remote GB/s ~ 252
+   rank 1: dispatch    159.3 us untraced,    160.2 us traced (+0.6%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 254
+   rank 2: dispatch    159.4 us untraced,    159.8 us traced (+0.3%), E[k]=3.63, dst_counts=[929, 929, 928, 928], remote GB/s ~ 253
+   rank 3: dispatch    159.0 us untraced,    159.3 us traced (+0.2%), E[k]=3.64, dst_counts=[932, 932, 932, 932], remote GB/s ~ 254
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms32_tok1024.pt
+>> /root/miniconda3/envs/deepep/bin/python /root/DeepEP/experiments/observability-exploration/common/run_dispatch.py --num-sms 32 --num-tokens 4096 --repeats 3 --num-tests 20 --out /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms32_tok4096.pt
+   rank 0: dispatch    562.2 us untraced,    563.4 us traced (+0.2%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 285
+   rank 1: dispatch    562.0 us untraced,    563.3 us traced (+0.2%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 285
+   rank 2: dispatch    561.9 us untraced,    563.3 us traced (+0.2%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 286
+   rank 3: dispatch    560.9 us untraced,    562.2 us traced (+0.2%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 285
+   auto num_sms would be 20; saved /root/DeepEP/experiments/observability-exploration/E0-window-vs-links/results/sms32_tok4096.pt

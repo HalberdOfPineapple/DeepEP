@@ -1,0 +1,3 @@
+done case01 19s ['rank 0: dispatch    598.6 us untraced,    599.6 us traced (+0.2%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 268']
+mapping sealed
+exit 0

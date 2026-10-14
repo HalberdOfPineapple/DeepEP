@@ -676,27 +676,29 @@ class EPBuffer(BufferBase):
         do_cpu_sync = value_or(do_cpu_sync, True)
 
         # Do dispatch
-        result, event, deferred_epilogue = self.runtime.dispatch(x, sf, topk_idx, topk_weights,
-                                                                 cumulative_local_expert_recv_stats,
-                                                                 cached_num_recv_tokens,
-                                                                 cached_num_expanded_tokens,
-                                                                 cached_num_recv_tokens_per_expert_list,
-                                                                 cached_psum_num_recv_tokens_per_scaleup_rank,
-                                                                 cached_psum_num_recv_tokens_per_expert,
-                                                                 cached_num_unaligned_recv_tokens_per_expert,
-                                                                 cached_dst_buffer_slot_idx,
-                                                                 cached_token_metadata_at_forward,
-                                                                 cached_recv_src_metadata,
-                                                                 cached_channel_linked_list,
-                                                                 num_max_tokens_per_rank,
-                                                                 num_experts, expert_alignment,
-                                                                 num_sms, num_qps,
-                                                                 previous_event,
-                                                                 async_with_compute_stream, allocate_on_comm_stream,
-                                                                 do_cpu_sync, do_expand,
-                                                                 do_zero_padding,
-                                                                 use_tma_aligned_col_major_sf,
-                                                                 defer_epilogue)
+        result, event, deferred_epilogue = self.runtime.dispatch(
+            x, sf, topk_idx, topk_weights,
+            cumulative_local_expert_recv_stats,
+            cached_num_recv_tokens,
+            cached_num_expanded_tokens,
+            cached_num_recv_tokens_per_expert_list,
+            cached_psum_num_recv_tokens_per_scaleup_rank,
+            cached_psum_num_recv_tokens_per_expert,
+            cached_num_unaligned_recv_tokens_per_expert,
+            cached_dst_buffer_slot_idx,
+            cached_token_metadata_at_forward,
+            cached_recv_src_metadata,
+            cached_channel_linked_list,
+            num_max_tokens_per_rank,
+            num_experts, expert_alignment,
+            num_sms, num_qps,
+            previous_event,
+            async_with_compute_stream, allocate_on_comm_stream,
+            do_cpu_sync, do_expand,
+            do_zero_padding,
+            use_tma_aligned_col_major_sf,
+            defer_epilogue
+        )
         event_overlap = EventOverlap(event)
 
         def finalize_dispatch(dispatch_result: tuple, deterministic_by_hook: bool):

@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A model for scale-up communication and its telemetry</title><meta name="description" content="What DeepEP taught us about GPU-to-GPU communication by direct memory writes, explained with pictures for readers new to the field.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root { --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#ECEFF3; --ink:#17202A; --muted:#5A6572; --line:#D5DBE2; --accent:#2B59C3; --accent-soft:#E3EAFA;
+  --ok:#11806E; --ok-soft:#DDF2EE; --warn:#B0620B; --warn-soft:#FBEBD8; --bad:#B42A2A; --bad-soft:#F9E1E1; --type:#7446B5; --type-soft:#EDE5F8; --code-bg:#EEF1F5;
+  --font-body:"IBM Plex Sans",system-ui,sans-serif; --font-head:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif; --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme:dark; --bg:#0E1318; --surface:#151C23; --surface-2:#1C252F; --ink:#E3E8EE; --muted:#97A2AE; --line:#2B3541; --accent:#8AABFF; --accent-soft:#1D2A48; --ok:#4FC8B2; --ok-soft:#123330; --warn:#E8A650; --warn-soft:#3A2A14; --bad:#F08A8A; --bad-soft:#3D1B1B; --type:#C4A7F4; --type-soft:#2A2040; --code-bg:#111920; } }
+:root[data-theme="dark"] { color-scheme:dark; --bg:#0E1318; --surface:#151C23; --surface-2:#1C252F; --ink:#E3E8EE; --muted:#97A2AE; --line:#2B3541; --accent:#8AABFF; --accent-soft:#1D2A48; --ok:#4FC8B2; --ok-soft:#123330; --warn:#E8A650; --warn-soft:#3A2A14; --bad:#F08A8A; --bad-soft:#3D1B1B; --type:#C4A7F4; --type-soft:#2A2040; --code-bg:#111920; }
+*{box-sizing:border-box} body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;margin:0;padding:0 16px 64px}
+main{max-width:900px;margin:0 auto;padding-top:36px} h1,h2,h3{font-family:var(--font-head);line-height:1.15} h1{font-size:clamp(30px,4.5vw,42px);margin:0 0 8px}
+h2{font-size:26px;margin:48px 0 8px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:19px;margin:28px 0 6px} p{margin:0 0 14px} .lede{font-size:18px;color:var(--muted)}
+.meta{font-size:13px;color:var(--muted);font-family:var(--font-mono);margin-bottom:24px} code{font-family:var(--font-mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{font-family:var(--font-mono);font-size:12.5px;background:var(--code-bg);padding:12px 14px;border-radius:8px;overflow-x:auto;line-height:1.5} a{color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0 18px} th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}
+th{font-family:var(--font-head);font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)} td.num,th.num{text-align:right;font-family:var(--font-mono);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0 20px} .callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.finding{border-left:4px solid var(--ok);background:var(--ok-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0} .warnbox{border-left:4px solid var(--warn);background:var(--warn-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+figure{margin:16px 0 22px} figure svg{max-width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px}
+figure svg.chart{padding:10px 6px} figcaption{font-size:13px;color:var(--muted);margin-top:8px}
+svg text{font-family:var(--font-body);font-size:12px;fill:var(--ink)} svg .mono{font-family:var(--font-mono);font-size:11px} svg .small{font-size:10.5px;fill:var(--muted)} svg .head{font-family:var(--font-head);font-size:13px;font-weight:600}
+svg .box{fill:var(--surface-2);stroke:var(--line)} svg .box-ok{fill:var(--ok-soft);stroke:var(--ok)} svg .box-warn{fill:var(--warn-soft);stroke:var(--warn)} svg .box-bad{fill:var(--bad-soft);stroke:var(--bad)} svg .box-acc{fill:var(--accent-soft);stroke:var(--accent)} svg .box-type{fill:var(--type-soft);stroke:var(--type)}
+svg .ln{stroke:var(--ink);stroke-width:1.4;fill:none} svg .ln-acc{stroke:var(--accent);stroke-width:1.6;fill:none} svg .ln-warn{stroke:var(--warn);stroke-width:1.6;fill:none} svg .ln-bad{stroke:var(--bad);stroke-width:1.6;fill:none;stroke-dasharray:5 4} svg .ln-mut{stroke:var(--muted);stroke-width:1;fill:none;stroke-dasharray:3 3}
+svg .fill-acc{fill:var(--accent)} svg .fill-warn{fill:var(--warn)} svg .fill-bad{fill:var(--bad)} svg .fill-ok{fill:var(--ok)} svg .fill-mut{fill:var(--muted)}
+svg.chart text{fill:var(--ink)} svg.chart .ytick text, svg.chart .xtick text{fill:var(--muted)}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);margin-right:4px} .tag.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent} .tag.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent} .tag.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+ul,ol{padding-left:22px} li{margin-bottom:6px} .kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:14px;margin:8px 0 14px} .kv .k{color:var(--muted);font-family:var(--font-mono);font-size:12.5px}
+</style></head><body><main>
+<h1>A model for scale-up communication and its telemetry</h1><p class="lede">What DeepEP taught us about GPU-to-GPU communication by direct memory writes, explained with pictures for readers new to the field.</p><div class="meta">notes · model, built from experiments E0–E9 on h100x4 · 2026-10-14</div>
+
+<p class="lede">This page explains, for a reader who is new to the field, what we learned from DeepEP about communication between GPUs that works by writing directly into another GPU's memory, and how those lessons form a general model. Every idea has a picture. Terms are defined where they first appear.</p>
+
+<div class="card"><h3>Words used on this page</h3>
+<ul>
+<li><b>Scale-up network:</b> the links that connect the GPUs inside one server (NVLink), as opposed to the network between servers.</li>
+<li><b>Memory-semantic communication:</b> a GPU moves data by executing a normal store instruction whose address is in another GPU's memory. There is no "send" and no "receive" function.</li>
+<li><b>Store:</b> one write instruction. DeepEP uses a <i>bulk store</i>, which writes a block of about 14 KB in one instruction.</li>
+<li><b>Flag:</b> a small word (4 or 8 bytes) that one GPU writes after its data, to tell the other GPU "the data is there". The other GPU reads the flag again and again (<i>polls</i>) until it changes.</li>
+<li><b>Rank:</b> one GPU taking part in the operation. In our runs there are four ranks.</li>
+<li><b>Warp:</b> a group of 32 threads that execute together. <b>SM:</b> a processor inside the GPU; an H100 has 132 of them. <b>Block:</b> the group of warps a kernel places on one SM.</li>
+<li><b>Barrier:</b> a point that all ranks must reach before any of them may continue.</li>
+<li><b>Telemetry / observability:</b> the signals a system gives out while running, and what can be concluded from them.</li>
+<li><b>Stamp:</b> a clock value written by a thread at a chosen point in the code.</li>
+</ul></div>
+
+<h2>1. What kind of communication this is</h2>
+<figure><svg viewBox="0 0 880 300" role="img" aria-label="Two GPUs. In message-based communication GPU A hands data to a network engine that sends a packet and GPU B receives a packet. In memory-semantic communication a thread on GPU A writes directly into GPU B's memory with a store instruction; there is no packet and no receive call."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">Two ways to move data between GPUs</text>
+<rect x="20" y="44" width="410" height="236" rx="10" class="box"/><text x="30" y="66" class="head">1. Message based (a NIC with RDMA send/receive)</text>
+<rect x="40" y="90" width="110" height="60" rx="8" class="box-acc"/><text x="95" y="114" text-anchor="middle" class="small">GPU A</text><text x="95" y="132" text-anchor="middle" class="small">"send 1 MB"</text>
+<rect x="170" y="90" width="100" height="60" rx="8" class="box-warn"/><text x="220" y="114" text-anchor="middle" class="small">network</text><text x="220" y="132" text-anchor="middle" class="small">packets</text>
+<rect x="290" y="90" width="120" height="60" rx="8" class="box-acc"/><text x="350" y="114" text-anchor="middle" class="small">GPU B</text><text x="350" y="132" text-anchor="middle" class="small">"receive 1 MB"</text>
+<path d="M150 120 L170 120 M270 120 L290 120" class="ln-mut" marker-end="url(#ar)"/>
+<text x="40" y="180" class="small">The sender and the receiver both run code for the transfer.</text>
+<text x="40" y="198" class="small">The hardware counts packets, so each packet can be observed.</text>
+<text x="40" y="216" class="small">Example: "packet 37 left at time t1 and arrived at time t2."</text>
+<rect x="450" y="44" width="410" height="236" rx="10" class="box"/><text x="460" y="66" class="head">2. Memory semantic (NVLink, used by DeepEP)</text>
+<rect x="470" y="90" width="150" height="60" rx="8" class="box-acc"/><text x="545" y="114" text-anchor="middle" class="small">GPU A, one thread</text><text x="545" y="132" text-anchor="middle" class="mono">store(addr_in_B, data)</text>
+<rect x="700" y="90" width="140" height="60" rx="8" class="box-acc"/><text x="770" y="114" text-anchor="middle" class="small">GPU B, memory</text><text x="770" y="132" text-anchor="middle" class="small">no code runs here</text>
+<path d="M620 120 L700 120" class="ln-mut" marker-end="url(#ar)"/><text x="660" y="110" text-anchor="middle" class="small">NVLink</text>
+<text x="470" y="180" class="small">Only the sender runs code. The write looks like a normal memory</text>
+<text x="470" y="198" class="small">write, but the address belongs to the other GPU.</text>
+<text x="470" y="216" class="small">There is no packet to count and no "receive" event on GPU B.</text>
+<text x="470" y="234" class="small">GPU B only learns about the data if GPU A also writes a flag</text>
+<text x="470" y="252" class="small">(a small word that means "the data is there") and GPU B polls it.</text>
+</svg><figcaption>Figure 1. Message-based communication (left) and memory-semantic communication (right). On the right there is no packet and no receive call, so there is nothing to count on the receiving side.</figcaption></figure>
+<p>In message-based communication the hardware moves <b>packets</b>, and every packet is an event that can be counted and timed. In memory-semantic communication the hardware moves <b>bytes written by a store instruction</b>. The receiving GPU does not run any code for it. The only way the receiver learns that the data has arrived is a flag that the sender writes afterwards. This single difference is the root of the observability problem.</p>
+
+<h2>2. The four milestones of one store</h2>
+<figure><svg viewBox="0 0 880 340" role="img" aria-label="The four milestones of one store: issued, accepted, visible, seen. Each milestone shows who can observe it and what it costs. For a bulk store only acceptance is reported for free; visibility costs a round trip; seen requires a poll on the receiver."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">One store, four milestones (the same four for every memory-semantic instruction)</text>
+<line x1="60" y1="90" x2="840" y2="90" class="ln"/>
+<g class="mono"><circle cx="100" cy="90" r="7" class="fill-ok"/><circle cx="320" cy="90" r="7" class="fill-ok"/><circle cx="560" cy="90" r="7" class="fill-warn"/><circle cx="800" cy="90" r="7" class="fill-bad"/></g>
+<text x="100" y="70" text-anchor="middle" class="head">M1 issued</text><text x="320" y="70" text-anchor="middle" class="head">M2 accepted</text><text x="560" y="70" text-anchor="middle" class="head">M3 visible</text><text x="800" y="70" text-anchor="middle" class="head">M4 seen</text>
+<g class="small">
+<text x="100" y="116" text-anchor="middle">the thread executed</text><text x="100" y="130" text-anchor="middle">the store instruction</text>
+<text x="320" y="116" text-anchor="middle">the sender GPU's copy engine</text><text x="320" y="130" text-anchor="middle">took the bytes from the thread</text>
+<text x="560" y="116" text-anchor="middle">the bytes are in GPU B's memory;</text><text x="560" y="130" text-anchor="middle">any reader on B would get them</text>
+<text x="800" y="116" text-anchor="middle">a thread on GPU B actually</text><text x="800" y="130" text-anchor="middle">read the flag and the data</text>
+</g>
+<rect x="20" y="160" width="840" height="170" rx="10" class="box"/>
+<text x="30" y="182" class="head">Who can observe each milestone, measured on H100 (experiment E1)</text>
+<g class="small">
+<text x="30" y="206" class="head">M1</text><text x="60" y="206">the sender thread, for free: a clock read next to the instruction.</text>
+<text x="30" y="228" class="head">M2</text><text x="60" y="228">the sender thread, for free: cp.async.bulk.wait_group returns here, 150 to 400 ns after M1, at the same time whether the</text>
+<text x="60" y="244">destination is the GPU's own memory or another GPU. So it says nothing about the other GPU.</text>
+<text x="30" y="266" class="head">M3</text><text x="60" y="266">the sender thread, but not for free: it must execute a release (fence.acq_rel.sys or red.release.sys), which waits a</text>
+<text x="60" y="282">full round trip, about 1.8 µs. DeepEP does this once per kernel, not once per store.</text>
+<text x="30" y="304" class="head">M4</text><text x="60" y="304">only a thread on GPU B that polls a flag. DeepEP polls the count words and the barrier word, so M4 exists for those</text>
+<text x="60" y="320">and never for the data stores.</text>
+</g>
+</svg><figcaption>Figure 2. Every memory-semantic instruction passes through the same four milestones. What differs between instructions is which milestones produce an event, who receives the event, and what it costs.</figcaption></figure>
+<p>Measured on this machine (experiment E1): a bulk store reports milestone <b>M2</b> for free, about 150 to 400 ns after it was issued, and it reports it at the same time whether the data goes to the GPU's own memory or to another GPU. So M2 tells the sender nothing about the other GPU or the link. Milestone <b>M3</b> can be forced with a <i>release</i> instruction, but it costs a full round trip of about 1.8 µs, so DeepEP uses it once per kernel. Milestone <b>M4</b> exists only for the words that the receiver polls.</p>
+<p>This also explains an important correctness fact: if a sender writes the data, waits for M2, and then writes a flag, the flag can arrive before the data (we saw stale data in 52 of 2,000 trials). The flag must be written with a release, which is what DeepEP's barrier does.</p>
+
+<h2>3. How much data does one flag cover?</h2>
+<p>This is the parameter that decides how finely a problem can be located. We call it <b>coverage</b>: the amount of data between two consecutive flags.</p>
+<figure><svg viewBox="0 0 880 470" role="img" aria-label="Three systems with different flag coverage: one flag per message (probe, NCCL LL), one flag per chunk of several messages (NCCL simple), one flag per whole operation (DeepEP). The finer the coverage, the finer the location of a problem."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">How much data does one flag cover? Three systems (blue = data, red = flag)</text>
+<g class="small">
+<text x="20" y="58" class="head">A · one flag per message</text><text x="230" y="58">FabricPerf's probe, NCCL "LL" protocol</text>
+<rect x="20" y="68" width="60" height="26" rx="4" class="box-acc"/><rect x="82" y="68" width="14" height="26" rx="3" class="box-bad"/>
+<rect x="110" y="68" width="60" height="26" rx="4" class="box-acc"/><rect x="172" y="68" width="14" height="26" rx="3" class="box-bad"/>
+<rect x="200" y="68" width="60" height="26" rx="4" class="box-acc"/><rect x="262" y="68" width="14" height="26" rx="3" class="box-bad"/>
+<rect x="290" y="68" width="60" height="26" rx="4" class="box-acc"/><rect x="352" y="68" width="14" height="26" rx="3" class="box-bad"/>
+<text x="20" y="114">The receiver learns about every message. A slow message is found by itself: "message 37 was slow".</text>
+<text x="20" y="150" class="head">B · one flag per chunk</text><text x="230" y="150">NCCL "simple" protocol (a flag every few hundred KB)</text>
+<rect x="20" y="160" width="60" height="26" rx="4" class="box-acc"/><rect x="82" y="160" width="60" height="26" rx="4" class="box-acc"/><rect x="144" y="160" width="60" height="26" rx="4" class="box-acc"/><rect x="206" y="160" width="14" height="26" rx="3" class="box-bad"/>
+<rect x="234" y="160" width="60" height="26" rx="4" class="box-acc"/><rect x="296" y="160" width="60" height="26" rx="4" class="box-acc"/><rect x="358" y="160" width="60" height="26" rx="4" class="box-acc"/><rect x="420" y="160" width="14" height="26" rx="3" class="box-bad"/>
+<text x="20" y="206">The receiver learns about every chunk. A slow message is found only as "somewhere in chunk 5".</text>
+<text x="20" y="242" class="head">C · one flag per whole operation</text><text x="260" y="242">DeepEP dispatch: about 11,000 stores per GPU, then one barrier word</text>
+<rect x="20" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="62" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="104" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="146" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="188" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="230" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="272" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="314" y="252" width="40" height="26" rx="4" class="box-acc"/><text x="370" y="270">… ×11,000 …</text><rect x="450" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="492" y="252" width="40" height="26" rx="4" class="box-acc"/><rect x="534" y="252" width="14" height="26" rx="3" class="box-bad"/>
+<text x="20" y="298">The receiver learns one thing: "everything has arrived". A slow store cannot be found from the receiver at all.</text>
+</g>
+<rect x="20" y="326" width="840" height="130" rx="10" class="box-ok"/>
+<text x="30" y="348" class="head">The rule this gives</text>
+<g class="small">
+<text x="30" y="370">From the receiver's side, a problem can be located only as finely as the flags. With system A you can say "message 37 was slow".</text>
+<text x="30" y="386">With system C you can only say "the whole operation was slow". FabricPerf's method is correct, but it was designed for system A.</text>
+<text x="30" y="402">DeepEP is system C.</text>
+<text x="30" y="424">From the sender's side it is the opposite: DeepEP's sender records milestone M2 for every one of its 11,000 stores, so the sender</text>
+<text x="30" y="440">side is very well observed. This is why the experiments found so much on the sender and nothing on the receiver.</text>
+</g>
+</svg><figcaption>Figure 3. Three systems with different coverage. FabricPerf’s probe and NCCL’s LL protocol write a flag with every message. NCCL’s simple protocol writes a flag after every chunk. DeepEP writes one flag after the whole operation.</figcaption></figure>
+<p>So FabricPerf's method is not wrong. Its five probe points are the milestones of Figure 2 for one message with one flag. DeepEP has the same milestones, but one flag covers eleven thousand stores. The method can be applied to DeepEP, and it then measures the whole operation as one unit, which is what the closing barrier already does. What FabricPerf's method cannot do is look inside the operation, and that is where all the degradations we found were.</p>
+
+<h2>4. Who waits for whom</h2>
+<p>A performance problem is often seen at a different place from where it is caused. This happens whenever one part of the system must wait for another part. There are three such places in DeepEP, and all three exist in any scale-up collective.</p>
+<figure><svg viewBox="0 0 880 430" role="img" aria-label="Three ways one slow part makes other parts wait: a barrier where four ranks must all arrive, a shared queue where stores to a busy peer delay stores to an idle peer, and a warp scheduler shared by several warps."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">Three places where one slow part makes other parts wait</text>
+<rect x="20" y="44" width="270" height="370" rx="10" class="box"/><text x="30" y="66" class="head">1. A barrier between ranks</text>
+<text x="30" y="88" class="small">A barrier is a point in the program that</text><text x="30" y="104" class="small">every rank must reach before any may go on.</text>
+<g class="small">
+<text x="30" y="134">rank 0</text><rect x="80" y="122" width="60" height="16" class="box-acc"/><rect x="140" y="122" width="120" height="16" class="box-warn"/>
+<text x="30" y="160">rank 1</text><rect x="80" y="148" width="60" height="16" class="box-acc"/><rect x="140" y="148" width="120" height="16" class="box-warn"/>
+<text x="30" y="186">rank 2</text><rect x="80" y="174" width="60" height="16" class="box-acc"/><rect x="140" y="174" width="120" height="16" class="box-warn"/>
+<text x="30" y="212">rank 3</text><rect x="80" y="200" width="180" height="16" class="box-acc"/>
+<line x1="260" y1="118" x2="260" y2="222" class="ln-bad"/><text x="150" y="236" class="small">↑ all four continue here</text>
+<text x="30" y="262">blue = working, orange = waiting.</text>
+<text x="30" y="280">Rank 3 is 500 µs late. Ranks 0, 1, 2 wait</text>
+<text x="30" y="298">500 µs each. On rank 0 this looks like</text>
+<text x="30" y="316">"the barrier took 500 µs". The cause is on</text>
+<text x="30" y="334">rank 3. To find it you need the arrival</text>
+<text x="30" y="352">times of all ranks on one clock (E6).</text>
+</g>
+<rect x="305" y="44" width="270" height="370" rx="10" class="box"/><text x="315" y="66" class="head">2. A shared queue inside one SM</text>
+<text x="315" y="88" class="small">All stores from one SM go through one queue,</text><text x="315" y="104" class="small">about 7 stores deep, no matter where they go.</text>
+<rect x="325" y="120" width="230" height="60" rx="8" class="box-warn"/><text x="340" y="142" class="small">queue:</text>
+<rect x="385" y="128" width="26" height="22" class="box-bad"/><rect x="415" y="128" width="26" height="22" class="box-bad"/><rect x="445" y="128" width="26" height="22" class="box-acc"/><rect x="475" y="128" width="26" height="22" class="box-bad"/><rect x="505" y="128" width="26" height="22" class="box-acc"/>
+<text x="340" y="172" class="small">red: to the busy GPU, blue: to an idle GPU</text>
+<g class="small">
+<text x="315" y="212">The queue is first in, first out. A store to the</text>
+<text x="315" y="230">idle GPU cannot leave before the stores to the</text>
+<text x="315" y="248">busy GPU in front of it.</text>
+<text x="315" y="274">Measured (E2): when one GPU receives 4× the</text>
+<text x="315" y="292">traffic, stores to that GPU and stores to idle</text>
+<text x="315" y="310">GPUs become slow by the same amount.</text>
+<text x="315" y="336">So "store to GPU 2 was slow" does not mean</text>
+<text x="315" y="354">GPU 2 or its link is the problem. The queue</text>
+<text x="315" y="372">in front of it may be full of other traffic.</text>
+</g>
+<rect x="590" y="44" width="270" height="370" rx="10" class="box"/><text x="600" y="66" class="head">3. A shared warp scheduler</text>
+<text x="600" y="88" class="small">An SM has 4 schedulers. Each one runs the</text><text x="600" y="104" class="small">instructions of several warps in turn.</text>
+<g class="small">
+<text x="600" y="134">sched 0</text><rect x="660" y="122" width="22" height="16" class="box-acc"/><rect x="684" y="122" width="22" height="16" class="box-acc"/><rect x="708" y="122" width="22" height="16" class="box-acc"/><rect x="732" y="122" width="22" height="16" class="box-acc"/><rect x="756" y="122" width="22" height="16" class="box-type"/>
+<text x="600" y="160">sched 1</text><rect x="660" y="148" width="22" height="16" class="box-acc"/><rect x="684" y="148" width="22" height="16" class="box-acc"/><rect x="708" y="148" width="22" height="16" class="box-acc"/><rect x="732" y="148" width="22" height="16" class="box-acc"/><rect x="756" y="148" width="22" height="16" class="box-type"/>
+<text x="600" y="186">sched 2</text><rect x="660" y="174" width="22" height="16" class="box-acc"/><rect x="684" y="174" width="22" height="16" class="box-acc"/><rect x="708" y="174" width="22" height="16" class="box-acc"/><rect x="732" y="174" width="22" height="16" class="box-acc"/><rect x="756" y="174" width="22" height="16" class="box-type"/>
+<text x="600" y="212">sched 3</text><rect x="660" y="200" width="22" height="16" class="box-acc"/><rect x="684" y="200" width="22" height="16" class="box-acc"/><rect x="708" y="200" width="22" height="16" class="box-acc"/><rect x="756" y="200" width="22" height="16" class="box-type"/>
+<text x="600" y="246">blue = dispatch warp, purple = notify warp</text>
+<text x="600" y="264">(the notify warp finishes early).</text>
+<text x="600" y="290">Scheduler 3 has only 3 dispatch warps to</text>
+<text x="600" y="308">serve, the others have 4. Its 3 warps finish</text>
+<text x="600" y="326">62 µs earlier, in every block (E7 follow-up).</text>
+<text x="600" y="352">A warp is slow or fast partly because of</text>
+<text x="600" y="370">which scheduler it sits on, not because of</text>
+<text x="600" y="388">the network.</text>
+</g>
+</svg><figcaption>Figure 4. Three waiting relations. Left: a barrier makes every rank wait for the slowest rank. Middle: a first-in-first-out queue makes stores to idle GPUs wait behind stores to a busy GPU. Right: a warp scheduler shared by several warps makes some warps slower than others.</figcaption></figure>
+<p>Each of these three has a matching rule for finding the real cause. For the barrier: compare the arrival times of all ranks on one clock, and the last one is the cause. For the queue: compare the latency of stores to different destinations; if they are all equally slow, the queue in front of them is full and no single destination is to blame. For the scheduler: compare warps of the same block; a fixed group of them is always faster.</p>
+
+<h2>5. The path of one store, and where software can see it</h2>
+<figure><svg viewBox="0 0 880 430" role="img" aria-label="The path of one store from the host, through the launch, the SM, the SM's queue, the GPU's crossbar, the NVLink port, the switch, the peer port and the peer memory. Green parts have a software event today, red parts have none."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">The path of one store and where software can see it (green = an event exists, red = no event)</text>
+<g class="small">
+<rect x="20" y="50" width="90" height="46" rx="6" class="box-ok"/><text x="65" y="69" text-anchor="middle">host code</text><text x="65" y="85" text-anchor="middle">host stamp</text>
+<rect x="120" y="50" width="90" height="46" rx="6" class="box-ok"/><text x="165" y="69" text-anchor="middle">launch queue</text><text x="165" y="85" text-anchor="middle">entry stamp</text>
+<rect x="220" y="50" width="90" height="46" rx="6" class="box-ok"/><text x="265" y="69" text-anchor="middle">warp on SM</text><text x="265" y="85" text-anchor="middle">M1 stamp</text>
+<rect x="320" y="50" width="100" height="46" rx="6" class="box-ok"/><text x="370" y="69" text-anchor="middle">SM store queue</text><text x="370" y="85" text-anchor="middle">M2 stamp</text>
+<rect x="430" y="50" width="90" height="46" rx="6" class="box-bad"/><text x="475" y="69" text-anchor="middle">crossbar, L2</text><text x="475" y="85" text-anchor="middle">none</text>
+<rect x="530" y="50" width="80" height="46" rx="6" class="box-bad"/><text x="570" y="69" text-anchor="middle">NVLink port</text><text x="570" y="85" text-anchor="middle">bytes only</text>
+<rect x="620" y="50" width="80" height="46" rx="6" class="box-bad"/><text x="660" y="69" text-anchor="middle">switch</text><text x="660" y="85" text-anchor="middle">none</text>
+<rect x="710" y="50" width="70" height="46" rx="6" class="box-bad"/><text x="745" y="69" text-anchor="middle">peer port</text><text x="745" y="85" text-anchor="middle">bytes only</text>
+<rect x="790" y="50" width="75" height="46" rx="6" class="box-warn"/><text x="827" y="69" text-anchor="middle">peer memory</text><text x="827" y="85" text-anchor="middle">M4 at barrier</text>
+<path d="M110 73 L120 73 M210 73 L220 73 M310 73 L320 73 M420 73 L430 73 M520 73 L530 73 M610 73 L620 73 M700 73 L710 73 M780 73 L790 73" class="ln-mut" marker-end="url(#ar)"/>
+</g>
+<rect x="20" y="120" width="840" height="300" rx="10" class="box"/>
+<text x="30" y="142" class="head">What the experiments found on each part</text>
+<g class="small">
+<text x="30" y="166" class="head">host code</text><text x="150" y="166">63 µs before the kernel starts and 37 µs after it ends, in a 142 µs decode call (E9). A GPU that is busy for</text>
+<text x="150" y="182">up to 85 µs before the call is not noticed at all (E6).</text>
+<text x="30" y="206" class="head">launch queue</text><text x="150" y="206">the kernel needs 16 free SMs at once. If other kernels are running it waits 1 to 2 ms (E5). Other ranks see</text>
+<text x="150" y="222">this as a slow barrier.</text>
+<text x="30" y="246" class="head">warp on SM</text><text x="150" y="246">the store instruction itself stops when the queue is full. This is half of each loop iteration even on an</text>
+<text x="150" y="262">idle network (E0).</text>
+<text x="30" y="286" class="head">SM queue</text><text x="150" y="286">drains at a speed that depends on which physical SM pair the block runs on: 1.0, 1.2 or 1.4 times</text>
+<text x="150" y="302">slower (E7). This decides which warp finishes last.</text>
+<text x="30" y="326" class="head">crossbar → peer</text><text x="150" y="326">no event. A second kernel on the same links makes the dispatch 2× slower, and the stamps look exactly like</text>
+<text x="150" y="342">the dispatch's own overload (E8). Only the byte counters of the ports tell the difference, and reading them</text>
+<text x="150" y="358">from the host disturbs the kernel by 20 %.</text>
+<text x="30" y="382" class="head">peer memory</text><text x="150" y="382">the receiver sees one event at the end. The 8-byte count words are the exception: they are polled, so their</text>
+<text x="150" y="398">one-way time is measurable: 1.8 µs idle, up to 70 µs when the links are full (E4).</text>
+</g>
+</svg><figcaption>Figure 5. The parts of the path a store travels through. Green parts produce an event that software can record. Red parts produce none. The sender can see up to its own store queue; after that, only the byte counters of the ports exist, and reading them disturbs the kernel.</figcaption></figure>
+<p>Two of these findings surprised us. First, how much of the time is before and after the kernel: in a small (decode-size) operation the host spends 100 µs around a 43 µs kernel. Second, how much the physical place of a block matters: a block on a slow SM pair finishes 40 % later than a block on a fast pair, every time, and this decides which warp is last. Neither of these is "the network", but both would be reported as communication time by any tool that only measures kernel duration.</p>
+
+<h2>6. The phases of an operation, and which of them are optional</h2>
+<p>Putting the parts together, an operation on a scale-up network consists of <b>moving the data</b> plus up to four kinds of synchronisation information that must reach some party:</p>
+<ol>
+<li><b>Readiness</b>: the sender must know the receiver's buffer is free before writing into it. Needed only when buffers are reused. DeepEP carries it with one global barrier at the start. NCCL carries it with a small "buffer free" flag per chunk. A one-shot operation into a fresh buffer does not need it.</li>
+<li><b>Sizes and shape</b>: the receiver must know how much data it will get and where. Needed only when the sizes are not known in advance. MoE dispatch and variable-size all-to-all need it; all-reduce, all-gather and reduce-scatter do not, because every rank knows the sizes from the call. When it is needed it can come before the data, as in DeepEP's normal mode (so the receiver can allocate), or together with the completion signal, if buffers are pre-allocated at maximum size.</li>
+<li><b>Completion</b>: the receiver must know the data has arrived. Always needed. Carried by a flag whose coverage is the parameter of Section 3.</li>
+<li><b>Hand-off</b>: a host or a following kernel must be told that the result is usable. Needed when the consumer is not the same kernel.</li>
+</ol>
+<p>So the earlier phrase "every operation goes through five phases" was too strong. Correct is: every operation moves data and signals completion; readiness, sizes and hand-off are present only when the operation needs them, and each can be carried by a global barrier, by per-chunk flags, or not at all. DeepEP happens to need all four, which is one reason it was a useful case to study, but it is not the rule. The diagnosis procedure is unchanged by this: step 3 locates the excess in whichever of these parts the operation actually has.</p>
+<figure><svg viewBox="0 0 880 340" role="img" aria-label="The same five phases in DeepEP dispatch and in a NCCL all-reduce: start together, exchange control, move data, finish together, hand back to the caller. The two systems differ in how many flags are inside the data phase."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">The same kinds of synchronisation in two operations, carried differently (dashed = not a separate phase)</text>
+<g class="small">
+<text x="20" y="66" class="head">DeepEP dispatch</text>
+<rect x="150" y="50" width="90" height="30" rx="5" class="box-warn"/><text x="195" y="70" text-anchor="middle">start together</text>
+<rect x="245" y="50" width="90" height="30" rx="5" class="box-type"/><text x="290" y="70" text-anchor="middle">sizes (counts)</text>
+<rect x="340" y="50" width="320" height="30" rx="5" class="box-acc"/><text x="500" y="70" text-anchor="middle">move data: 11,000 stores, no flags inside</text>
+<rect x="665" y="50" width="100" height="30" rx="5" class="box-warn"/><text x="715" y="70" text-anchor="middle">finish together</text>
+<rect x="770" y="50" width="90" height="30" rx="5" class="box"/><text x="815" y="70" text-anchor="middle">hand back</text>
+<text x="20" y="126" class="head">NCCL all-reduce</text>
+<rect x="150" y="110" width="90" height="30" rx="5" class="box" stroke-dasharray="4 3"/><text x="195" y="130" text-anchor="middle">per-chunk ready</text>
+<rect x="245" y="110" width="90" height="30" rx="5" class="box" stroke-dasharray="4 3"/><text x="290" y="130" text-anchor="middle">none needed</text>
+<rect x="340" y="110" width="320" height="30" rx="5" class="box-acc"/>
+<rect x="380" y="114" width="6" height="22" class="box-bad"/><rect x="430" y="114" width="6" height="22" class="box-bad"/><rect x="480" y="114" width="6" height="22" class="box-bad"/><rect x="530" y="114" width="6" height="22" class="box-bad"/><rect x="580" y="114" width="6" height="22" class="box-bad"/><rect x="630" y="114" width="6" height="22" class="box-bad"/>
+<text x="500" y="156" text-anchor="middle">move data: a flag after every chunk</text>
+<rect x="665" y="110" width="100" height="30" rx="5" class="box-warn"/><text x="715" y="130" text-anchor="middle">finish together</text>
+<rect x="770" y="110" width="90" height="30" rx="5" class="box"/><text x="815" y="130" text-anchor="middle">hand back</text>
+</g>
+<rect x="20" y="180" width="840" height="150" rx="10" class="box-ok"/>
+<text x="30" y="202" class="head">Prediction from the model</text>
+<g class="small">
+<text x="30" y="224">NCCL has no size exchange (sizes are fixed) and no start barrier (readiness is a per-chunk flag). In DeepEP the data phase is</text>
+<text x="30" y="240">observed from the sender (M2 of every store); in NCCL from the receiver (M4 of every chunk), not from the sender's stores.</text>
+<text x="30" y="262">So a slow receiver port should be visible in NCCL and invisible in DeepEP; a slow sender SM should be visible in DeepEP and</text>
+<text x="30" y="278">blurred into a chunk in NCCL. "Finish together" and "hand back" behave the same in both: a late rank costs</text>
+<text x="30" y="294">every other rank the same idle time.</text>
+<text x="30" y="316">Measuring NCCL with the same stamps is the test of this prediction. If it holds, the model is general and DeepEP was one point in it.</text>
+</g>
+</svg><figcaption>Figure 6. DeepEP dispatch and a NCCL all-reduce side by side. DeepEP carries readiness and sizes as separate phases with global barriers; NCCL needs no size exchange and carries readiness as a per-chunk flag (dashed boxes). The red marks are completion flags: none inside DeepEP's data phase, one after every NCCL chunk.</figcaption></figure>
+
+<h2>7. The model in one paragraph</h2>
+<p>A scale-up communication operation is a set of memory-semantic instructions, each passing through the milestones <i>issued, accepted, visible, seen</i>. The instructions are grouped by flags; the amount of data between two flags is the <b>coverage</b>. Parts of the system wait for each other through <b>barriers</b> (between ranks), <b>shared queues</b> (between destinations) and <b>shared schedulers</b> (between warps). The data travels along a <b>path</b> of hardware parts, some of which produce events and some of which do not. The operation moves data and must deliver completion; it may also need readiness, sizes and hand-off, each carried globally, per chunk, or not at all. Telemetry for such an operation consists of three kinds of signal: stamps at the milestones that exist, byte counters at the parts of the path that have them, and one clock shared by all ranks so that stamps from different GPUs can be compared. What can be diagnosed follows from the coverage and the waiting relations; what cannot be diagnosed is the part of the path between the sender's queue and the receiver's memory, in any system whose coverage is coarse.</p>
+
+<h2>8. A telemetry method built on the model</h2>
+<p>The model is useful only if it tells us what to measure and how to reason. This section does that. It is written for any scale-up collective, not only DeepEP; the DeepEP numbers are examples.</p>
+<figure><svg viewBox="0 0 880 420" role="img" aria-label="From the four parts of the model to the four parts of a telemetry design: milestones give the stamps, coverage says which side to instrument and where to add sampled flags, the waiting relations give three comparison tests, and the path says which counters exist outside the kernel."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">From the model to a telemetry design: each part of the model answers one design question</text>
+<g class="small">
+<rect x="20" y="46" width="200" height="70" rx="8" class="box-acc"/><text x="120" y="68" text-anchor="middle" class="head">Part 1: milestones</text><text x="120" y="88" text-anchor="middle">issued · accepted · visible · seen</text><text x="120" y="104" text-anchor="middle">for every instruction</text>
+<rect x="240" y="46" width="200" height="70" rx="8" class="box-acc"/><text x="340" y="68" text-anchor="middle" class="head">Part 2: coverage</text><text x="340" y="88" text-anchor="middle">how much data one flag covers</text><text x="340" y="104" text-anchor="middle">per message … per operation</text>
+<rect x="460" y="46" width="200" height="70" rx="8" class="box-acc"/><text x="560" y="68" text-anchor="middle" class="head">Part 3: who waits for whom</text><text x="560" y="88" text-anchor="middle">barrier · shared queue ·</text><text x="560" y="104" text-anchor="middle">shared scheduler</text>
+<rect x="680" y="46" width="180" height="70" rx="8" class="box-acc"/><text x="770" y="68" text-anchor="middle" class="head">Part 4: the path</text><text x="770" y="88" text-anchor="middle">which parts give events,</text><text x="770" y="104" text-anchor="middle">which give only byte counts</text>
+<path d="M120 116 L120 140 M340 116 L340 140 M560 116 L560 140 M770 116 L770 140" class="ln-mut" marker-end="url(#ar)"/>
+<rect x="20" y="144" width="200" height="130" rx="8" class="box-ok"/><text x="120" y="166" text-anchor="middle" class="head">Answer: where to stamp</text><text x="30" y="188">Read the clock at every milestone</text><text x="30" y="204">that gives an event for free.</text><text x="30" y="220">Record who (rank, SM, warp, lane),</text><text x="30" y="236">to whom (destination), how much</text><text x="30" y="252">(bytes). Cost seen: about 1 %.</text>
+<rect x="240" y="144" width="200" height="130" rx="8" class="box-ok"/><text x="340" y="166" text-anchor="middle" class="head">Answer: which side</text><text x="250" y="188">Fine flags → stamp the receiver</text><text x="250" y="204">(it sees "seen" per message).</text><text x="250" y="220">Coarse flags → stamp the sender</text><text x="250" y="236">(it sees "accepted" per store) and</text><text x="250" y="252">add sampled flags for "visible".</text>
+<rect x="460" y="144" width="200" height="130" rx="8" class="box-ok"/><text x="560" y="166" text-anchor="middle" class="head">Answer: three tests</text><text x="470" y="188">Barrier → compare arrival times</text><text x="470" y="204">of all ranks on one clock.</text><text x="470" y="220">Queue → compare latency per</text><text x="470" y="236">destination, same sender.</text><text x="470" y="252">Scheduler → compare warps, one SM.</text>
+<rect x="680" y="144" width="180" height="130" rx="8" class="box-ok"/><text x="770" y="166" text-anchor="middle" class="head">Answer: counters</text><text x="690" y="188">Read the byte counters of</text><text x="690" y="204">the parts with no event (ports),</text><text x="690" y="220">only before and after the</text><text x="690" y="236">operation. Reading during it</text><text x="690" y="252">disturbs the kernel.</text>
+</g>
+<rect x="20" y="294" width="840" height="116" rx="8" class="box"/>
+<text x="30" y="316" class="head">Two things every design needs in addition</text>
+<g class="small">
+<text x="30" y="340">One clock for all ranks. GPU clocks drift by milliseconds per hour against each other. Measure the offsets right before and after each</text>
+<text x="30" y="356">operation (a ping-pong between every pair, 12 ms for four GPUs, 0.1 µs accuracy). Host stamps map onto the GPU clock to about 5 µs.</text>
+<text x="30" y="380">A baseline. Every quantity is compared with its value from a quiet run of the same configuration. The diagnosis works on the difference,</text>
+<text x="30" y="396">never on the raw value: many "slow" numbers (a 240 µs tail, a 63 µs launch path) are normal for this kernel on this machine.</text>
+</g>
+</svg><figcaption>Figure 7. Each of the four parts of the model answers one question of the telemetry design. Below: the two things every design needs in addition, one clock and a baseline.</figcaption></figure>
+
+<h3>8.1 Where to put the signals</h3>
+<ol>
+<li><b>Stamp the milestones that are free.</b> For each kind of instruction, find which of the four milestones produces an event at no cost (for a bulk store: issued and accepted; for a polled flag: seen). Read the clock there and record who did it (rank, SM, warp, lane), to whom (destination rank), and how much (bytes). The library already knows all of these when it issues the instruction, so this is cheap: about 1 % of kernel time in DeepEP.</li>
+<li><b>Choose the side from the coverage.</b> If the system writes a flag per message, the receiver sees "seen" for each message and is the better side to instrument. If the system writes one flag per operation, the receiver sees nothing useful and the sender is the only side with per-store events. DeepEP is the second case.</li>
+<li><b>Stamp the boundaries of the phases the operation has</b> on one thread per rank: kernel entry, readiness barrier arrive and release (if any), size exchange done (if any), last data store accepted, completion barrier, kernel end; plus two host stamps, before the call and after the return.</li>
+<li><b>Share one clock.</b> Measure the clock offset between every pair of GPUs right before and right after each operation. A one-time calibration is wrong within minutes.</li>
+<li><b>Read counters outside, not inside.</b> The byte counters of the ports are the only signal for the parts of the path without events. Read them before and after the operation. A read during the operation changed the kernel by 20 % in our runs.</li>
+<li><b>Keep a baseline.</b> Run the same configuration quietly and keep the median of every quantity, including the per-SM finish levels of each GPU.</li>
+</ol>
+
+<h3>8.2 Buying visibility where the system gives none: the coverage knob</h3>
+<p>When the flags are coarse, the sender can still create a "visible" milestone itself by executing a release instruction, which waits until all its previous stores are visible on the other GPU. This costs one round trip, so it cannot be done for every store, but it can be done every <i>k</i> stores. This turns coverage into a knob.</p>
+<figure><svg viewBox="0 0 880 470" role="img" aria-label="The coverage knob: adding a release every k stores creates a visible milestone every k stores at a cost of one round trip each; the table shows the trade-off between how finely a problem can be located and the cost in time."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<text x="20" y="26" class="head">The coverage knob: buying "visible" milestones when the system has coarse flags</text>
+<g class="small">
+<text x="20" y="56" class="head">As shipped (DeepEP):</text>
+<rect x="190" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="226" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="262" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="298" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="334" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="370" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="406" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="442" y="42" width="34" height="22" rx="3" class="box-acc"/><text x="490" y="58">… ×17 per warp …</text><rect x="600" y="42" width="34" height="22" rx="3" class="box-acc"/><rect x="636" y="42" width="12" height="22" rx="3" class="box-bad"/>
+<text x="660" y="58">one release at the end</text>
+<text x="20" y="100" class="head">With a sampled release every k = 4 stores:</text>
+<rect x="190" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="226" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="262" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="298" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="334" y="112" width="12" height="22" rx="3" class="box-warn"/>
+<rect x="356" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="392" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="428" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="464" y="112" width="34" height="22" rx="3" class="box-acc"/><rect x="500" y="112" width="12" height="22" rx="3" class="box-warn"/>
+<text x="530" y="128">orange = a fence by the sending lane: "all my</text><text x="530" y="144">stores so far are visible". Costs one round trip.</text>
+<text x="190" y="166">What it gives: the time from "accepted" to "visible" for the group of 4 stores, measured by the sender alone.</text>
+<text x="190" y="182">That is the time the bytes spent on the path (crossbar, port, switch, peer), which otherwise has no event.</text>
+</g>
+<rect x="20" y="200" width="840" height="150" rx="8" class="box"/>
+<text x="30" y="222" class="head">The trade-off with this machine's numbers (round trip 1.8 µs, iteration 17 µs, 17 tokens per warp)</text>
+<g class="small">
+<text x="30" y="246">k = every store: about 4 releases per iteration, up to 7 µs added to a 17 µs iteration. Too expensive to leave on.</text>
+<text x="30" y="266">k = 4 stores: one release per iteration, 1.8 µs added, about 10 %. Locates a path delay to within one token of one warp.</text>
+<text x="30" y="286">k = one per warp (17 tokens): 1.8 µs per 300 µs, under 1 %. Locates a path delay to within one warp, the resolution of the tail itself.</text>
+<text x="30" y="306">k = one per kernel: what DeepEP does today. Locates nothing inside the operation.</text>
+<text x="30" y="330">Rule: choose the largest k that still separates the causes you need to tell apart. One per warp already separates "my SM" from "the path".</text>
+</g>
+<rect x="20" y="366" width="840" height="94" rx="8" class="box-warn"/>
+<text x="30" y="388" class="head">What the knob cannot do</text>
+<g class="small">
+<text x="30" y="410">A release tells the sender when its bytes became visible, not where they waited on the way. To split the path into port, switch and peer,</text>
+<text x="30" y="426">the hardware would have to give a timestamp or a counter at those parts. The knob turns the dark segment into one number, no more.</text>
+<text x="30" y="448">This is the request to hardware that the model produces: a per-destination "visible" counter readable by the GPU, or timestamped port counters.</text>
+</g>
+</svg><figcaption>Figure 8. Sampled releases create a visible milestone every k stores. The table gives the cost and the resolution for each k on this machine. One release per warp costs under 1 % and already separates "my SM" from "the path".</figcaption></figure>
+
+<h3>8.3 The three comparison tests</h3>
+<p>Each waiting relation of Section 4 gives one test, and the test is the inverse of the relation.</p>
+<table>
+<thead><tr><th>Relation</th><th>What you see</th><th>The test</th><th>What it separates</th></tr></thead>
+<tbody>
+<tr><td>barrier between ranks</td><td>"my barrier took long"</td><td>put every rank's arrival stamp on one clock; the last arrival is the cause. On that rank, compare the host stamp with the kernel entry: if the entry is late but the host call was on time, the GPU was busy before; if the host call itself was late, the host was slow</td><td>a slow peer from a slow barrier; a busy GPU from a slow host</td></tr>
+<tr><td>shared queue in the SM</td><td>"stores to GPU 2 are slow"</td><td>from the same sender, compare the store latency to each destination. Equal for all destinations: the queue is full, no single destination is to blame; look at who fills it (the destination mix of the queued stores, or a foreign kernel's bytes on the ports)</td><td>a slow destination from a full queue</td></tr>
+<tr><td>shared warp scheduler, shared SM pair</td><td>"some warps are slow"</td><td>group warps by physical SM and by scheduler. Fixed groups that are always slow: placement. A spread with no grouping: per-warp luck on the path</td><td>placement from the path</td></tr>
+</tbody>
+</table>
+
+<h3>8.4 The procedure</h3>
+<figure><svg viewBox="0 0 880 560" role="img" aria-label="The general diagnosis procedure as a flow: baseline, record, locate the phase, apply the test for that phase, confirm by changing one thing, and if the result is the dark segment, turn the coverage knob or read counters."><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-mut"/></marker><marker id="arb" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-bad"/></marker><marker id="aro" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="fill-ok"/></marker></defs>
+<g class="small">
+<rect x="300" y="14" width="280" height="44" rx="8" class="box-acc"/><text x="440" y="32" text-anchor="middle" class="head">Step 1 · baseline</text><text x="440" y="50" text-anchor="middle">quiet run, same configuration, all stamps on</text>
+<path d="M440 58 L440 76" class="ln-mut" marker-end="url(#ar)"/>
+<rect x="300" y="78" width="280" height="44" rx="8" class="box-acc"/><text x="440" y="96" text-anchor="middle" class="head">Step 2 · record the slow operation</text><text x="440" y="114" text-anchor="middle">stamps + clock offsets + port bytes before/after</text>
+<path d="M440 122 L440 140" class="ln-mut" marker-end="url(#ar)"/>
+<rect x="280" y="142" width="320" height="44" rx="8" class="box-acc"/><text x="440" y="160" text-anchor="middle" class="head">Step 3 · which phase grew?</text><text x="440" y="178" text-anchor="middle">readiness · sizes · data · completion · hand back, per rank</text>
+<path d="M440 186 L440 204" class="ln-mut" marker-end="url(#ar)"/>
+<text x="440" y="222" text-anchor="middle" class="head">Step 4 · the test for that phase</text>
+<rect x="20" y="236" width="200" height="86" rx="8" class="box"/><text x="120" y="256" text-anchor="middle" class="head">readiness / completion</text><text x="30" y="276">arrival of each rank on one clock.</text><text x="30" y="292">Last rank = cause. On that rank:</text><text x="30" y="308">host late or GPU busy before?</text>
+<rect x="235" y="236" width="200" height="86" rx="8" class="box"/><text x="335" y="256" text-anchor="middle" class="head">sizes</text><text x="245" y="276">one-way time of the size words.</text><text x="245" y="292">All senders slow → behind data.</text><text x="245" y="308">One sender slow → that sender.</text>
+<rect x="450" y="236" width="200" height="86" rx="8" class="box"/><text x="550" y="256" text-anchor="middle" class="head">data</text><text x="460" y="276">which step of the loop grew?</text><text x="460" y="292">per SM (placement)? per destination</text><text x="460" y="308">(queue)? foreign bytes on ports?</text>
+<rect x="665" y="236" width="195" height="86" rx="8" class="box"/><text x="762" y="256" text-anchor="middle" class="head">hand back</text><text x="675" y="276">kernel end → host return.</text><text x="675" y="292">Epilogue kernel or host code</text><text x="675" y="308">(polling, allocation).</text>
+<path d="M440 230 L120 236 M440 230 L335 236 M440 230 L550 236 M440 230 L762 236" class="ln-mut"/>
+<path d="M120 322 L120 340 M335 322 L335 340 M550 322 L550 340 M762 322 L762 340" class="ln-mut" marker-end="url(#ar)"/>
+<rect x="20" y="342" width="200" height="56" rx="8" class="box-ok"/><text x="120" y="364" text-anchor="middle">owner: a peer's preceding work,</text><text x="120" y="382" text-anchor="middle">the launch queue, or the host</text>
+<rect x="235" y="342" width="200" height="56" rx="8" class="box-ok"/><text x="335" y="364" text-anchor="middle">owner: this operation's data</text><text x="335" y="382" text-anchor="middle">plane, or one late peer</text>
+<rect x="450" y="342" width="200" height="56" rx="8" class="box-ok"/><text x="550" y="364" text-anchor="middle">owner: local memory, placement,</text><text x="550" y="382" text-anchor="middle">routing, a foreign kernel …</text>
+<rect x="665" y="342" width="195" height="56" rx="8" class="box-ok"/><text x="762" y="364" text-anchor="middle">owner: epilogue or</text><text x="762" y="382" text-anchor="middle">host code</text>
+<path d="M550 398 L550 416" class="ln-mut" marker-end="url(#ar)"/>
+<rect x="450" y="418" width="200" height="56" rx="8" class="box-bad"/><text x="550" y="440" text-anchor="middle">… or none of these: uniform, own</text><text x="550" y="458" text-anchor="middle">bytes only → the dark segment</text>
+<path d="M650 446 L680 446" class="ln-mut" marker-end="url(#ar)"/>
+<rect x="685" y="418" width="175" height="56" rx="8" class="box-warn"/><text x="772" y="440" text-anchor="middle">turn the coverage knob</text><text x="772" y="458" text-anchor="middle">(sampled releases), re-record</text>
+<rect x="20" y="494" width="840" height="56" rx="8" class="box-type"/><text x="30" y="516" class="head">Step 5 · confirm by changing one thing</text>
+<text x="30" y="538">The owner predicts a knob: fewer SMs, the late rank's launch, the other stream's traffic, another placement. Change it, re-record. No move: back to step 3.</text>
+</g>
+</svg><figcaption>Figure 9. The diagnosis procedure. Steps 1 to 3 locate the phase; step 4 applies the test of that phase and names an owner; step 5 confirms by changing one thing. The red box is where the lit part of the path ends; the coverage knob is the way forward from there.</figcaption></figure>
+<ol>
+<li><b>Baseline.</b> A quiet run with all stamps on.</li>
+<li><b>Record</b> the slow operation with the same stamps, the clock offsets, and the port bytes before and after.</li>
+<li><b>Locate the phase.</b> For each rank, subtract the baseline from the measured time of each phase the operation has (readiness, sizes, data, completion, hand-off). The largest difference names the phase; the rank with the largest difference is the starting rank.</li>
+<li><b>Apply the test of that phase</b> (Figure 9, middle row). Each test ends at an owner: a peer's preceding work, the launch queue, the host, this operation's own data plane, local memory, block placement, routing, a foreign kernel, or the dark segment.</li>
+<li><b>Confirm by changing one thing.</b> Each owner predicts a knob that should move the excess. If it does not move, the owner was wrong; return to step 3.</li>
+<li><b>If the answer is the dark segment,</b> turn the coverage knob: add one release per warp, re-record, and read the accepted-to-visible time. This says how long the bytes spent on the path, though not where.</li>
+</ol>
+
+<h3>8.5 Applying the method to a new system</h3>
+<p>To use this on a system other than DeepEP, answer four questions about it: which instructions it uses and which milestones they report for free; how much data one flag covers on each side; where its barriers, shared queues and shared schedulers are; and which parts of its path have counters. The answers fill in Figure 7, and the procedure of Figure 9 follows unchanged. For NCCL the answers are known in outline: fixed sizes, so no size exchange; per-chunk flags for both readiness and completion, so instrument the receiver's polls; the same SM queues on the sender; the same ports. The model predicts that NCCL will see arrival delays per chunk and will not see which sender SM was slow, the mirror image of DeepEP.</p>
+
+<h3>8.6 What the method cannot do, stated plainly</h3>
+<ul>
+<li>It cannot say <em>where</em> on the path between the sender's queue and the receiver's memory the bytes waited. It can say how long (with the coverage knob) and whether bytes of another kernel were there (with the port counters).</li>
+<li>It cannot see a slow receiver at all when the flags are per operation. Only the receiver's own polls (if any) or hardware counters at the receiver's port can.</li>
+<li>Its host-side resolution is about 5 µs, which is as large as some phases of a decode-size operation.</li>
+<li>Its counters are read from the host and disturb the system. Counters readable from the GPU, or a per-destination "accepted and visible" counter in the memory system, are what the method asks the hardware for.</li>
+</ul>
+
+<h2>9. Why DeepEP was a good case, and what to do next</h2>
+<p>DeepEP sits at one end of the coverage scale: the coarsest possible flags on the receiver side and, because the library knows every store it issues, the finest possible events on the sender side. That made it show clearly which parts of the problem are not about the network at all (host, launch, placement, schedulers) and exactly where the sender's view stops. A system at the other end of the scale, NCCL with its per-chunk flags, should show the opposite: good visibility of arrival on the receiver, little visibility of what each sender SM did. Measuring NCCL on the same GPUs with the same stamps is the next step. If the model predicts correctly what each system can and cannot see, the model is general, and the telemetry proposal that follows from it, a cheap per-destination "accepted and visible" counter in hardware, applies to all of them.</p>
+
+<p class="meta">Generated 2026-10-14 15:33 by the experiment's analysis script; raw data in results/.</p>
+</main></body></html>

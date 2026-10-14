@@ -26,3 +26,9 @@ coredump/
 # OpenCode
 .sisyphus/
 AGENTS.md
+
+# Local experiment artifacts
+*.pt
+__pycache__/
+build_*/
+*.pyc

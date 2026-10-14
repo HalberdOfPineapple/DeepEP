@@ -1,0 +1,13 @@
+{
+ "case": "case01",
+ "kind": "compute_neighbour",
+ "desc": "separate process on GPU 5 (rank 1) running 32 MB HBM copies during the whole run",
+ "flags": [],
+ "external": [
+  "copy",
+  5
+ ],
+ "override": null,
+ "wall_s": 18.70526885986328,
+ "time": "2026-10-14 15:52:05"
+}

@@ -28,7 +28,7 @@ template <bool kIsScaleupNVLink,
           int kNumDispatchThreads = kNumDispatchWarps * 32,
           int kNumThreads = kNumNotifyThreads + kNumDispatchThreads,
           typename team_t = std::conditional_t<kIsScaleupNVLink, ncclTeamTagLsa, ncclTeamTagWorld>>
-__global__ void __launch_bounds__(kNumThreads, 1)
+__global__ void __launch_bounds__(kNumThreads, 1) 
 dispatch_impl(
     void* x, sf_pack_t* sf, topk_idx_t* topk_idx, float* topk_weights,
     int* cumulative_local_expert_recv_stats,
@@ -70,9 +70,12 @@ dispatch_impl(
     const auto gin = comm::NCCLGin(nccl_dev_comm, nccl_window, qp_idx, sharing_mode);
 
     // Barrier without TMA store flush, without prologue grid sync
-    comm::gpu_barrier<kIsScaleupNVLink, 1, kNumRanks,
-                      kNumSMs, kNumThreads, kNumQPs, kNumTimeoutCycles, comm::kDispatchTag0, false, false, true>(
-        gin, workspace_layout.get_barrier_signals(), 0, rank_idx, sm_idx, thread_idx);
+    comm::gpu_barrier<
+        kIsScaleupNVLink, 1, kNumRanks,
+        kNumSMs, kNumThreads, kNumQPs, kNumTimeoutCycles, comm::kDispatchTag0, false, false, true
+    >(
+        gin, workspace_layout.get_barrier_signals(), 0, rank_idx, sm_idx, thread_idx
+    );
 
     // Different warp roles
     if (warp_idx < kNumNotifyWarps) {
@@ -109,7 +112,10 @@ dispatch_impl(
         // Do full-grid reduction
         #pragma unroll
         for (int i = thread_idx; i < kNumRanks + kNumExperts; i += kNumNotifyThreads) {
+            // The upper half of the 64-bit counter counts the number of SMs that have arrived to incremenet the corresponding counter
             const int64_t counter = (1ll << 32ll) | rank_expert_count[i];
+
+            // workspace_layout.signals.notify_reduction is a 
             ptx::red_add(workspace_layout.get_notify_reduction_workspace_ptr() + i, counter);
         }
 
@@ -122,10 +128,12 @@ dispatch_impl(
                 comm::timeout_while<kNumTimeoutCycles>(true, [=](const bool& is_last_check) {
                     const auto status = ptx::ld_volatile<int64_t>(workspace_layout.get_notify_reduction_workspace_ptr() + i);
                     if ((status >> 32) == kNumSMs) {
+                        // status >> 32 indicates the all SMs have arrived to add the results of the corresponding counter (status >> 32 = number of SMs that have arrived == kNumSMs)
+
                         // Write into shared memory
                         // Write into send buffer if with RDMA
                         const auto encoded =
-                            math::encode_decode_positive(static_cast<int>(status & 0xffffffffll));
+                            math::encode_decode_positive(static_cast<int>(status & 0xffffffffll)); // the and operation is to get the lower 32 bits of the status
                         rank_expert_count[i] = encoded;
                         if constexpr (not kIsScaleupNVLink)
                             workspace_layout.get_scaleup_rank_expert_count_ptr<true>()[i] = encoded;
@@ -152,8 +160,12 @@ dispatch_impl(
                 // Rank counters
                 const auto dst_rank_counter =
                     workspace_layout.get_scaleup_rank_count_ptr<false>() + rank_idx;
-                gin.put_value<team_t>(dst_rank_counter, static_cast<int64_t>(rank_count[i]), i,
-                                      ncclGinOptFlagsAggregateRequests);
+                gin.put_value<team_t>(
+                    dst_rank_counter, // address on symmetric memory (workspace)
+                    static_cast<int64_t>(rank_count[i]),  // value
+                    i, // target rank
+                    ncclGinOptFlagsAggregateRequests
+                );
             }
             __syncwarp();
 
@@ -162,10 +174,16 @@ dispatch_impl(
                 // NVLink per-element copy
                 // We don't use TMA as the dtype of shared memory and global is different
                 for (int i = thread_idx; i < kNumExperts; i += kNumNotifyThreads) {
+                    // expert_count_ptr has shape [kNumRanks x kNumExpertsPerRank]. 
+                    // For i-th [num_experts_per_rank] block, it means **the number of tokens from i-th rank to each expert hosted by the current rank**.
+                    // Thus we need to: convert the global expert index to the local expert index (i % kNumExpertsPerRank) 
+                    //                  and offset it by the rank index (kNumExpertsPerRank * rank_idx) to the area corresponding to the sender.
                     const auto idx = kNumExpertsPerRank * rank_idx + (i % kNumExpertsPerRank);
                     gin.put_value<team_t>(
-                        workspace_layout.get_scaleup_expert_count_ptr<false>() + idx,
-                        static_cast<int64_t>(expert_count[i]), i / kNumExpertsPerRank);
+                        workspace_layout.get_scaleup_expert_count_ptr<false>() + idx, // address on symmetric memory (workspace)
+                        static_cast<int64_t>(expert_count[i]),  // value
+                        i / kNumExpertsPerRank // target rank
+                    );
                 }
             } else {
                 // RDMA bulk copy
@@ -179,24 +197,30 @@ dispatch_impl(
             // This is necessary, as the waited results will rewrite the shared memory
             ptx::named_barrier<kNumNotifyThreads>(kNotifyBarrierIndex);
 
-            // Wait for rank and expert count
+            // Wait for rank and expert count (polling-based synchronization)
             const auto start_clock = clock64();
             for (int i = thread_idx; i < kNumRanks + kNumExperts; i += kNumNotifyThreads) {
-                comm::timeout_while<kNumTimeoutCycles>([=](const bool& is_last_check) {
-                    // NOTES: the global memory type has 64 bits
-                    const auto count = static_cast<int>(
-                        ptx::ld_volatile<int64_t>(workspace_layout.get_scaleup_rank_expert_count_ptr<false>() + i));
-                    const auto decoded = math::encode_decode_positive(count);
-                    if (math::is_decoded_positive_ready(decoded)) {
-                        workspace_layout.get_scaleup_rank_expert_count_ptr<false>()[i] = 0;
-                        rank_expert_count[i] = decoded;
-                        return true;
-                    }
+                comm::timeout_while<kNumTimeoutCycles>(
+                    [=](const bool& is_last_check) {
+                        // NOTES: the global memory type has 64 bits
+                        // remeber _scaleup_rank_expert_count (in HBM workspace) has the same base as _scaleup_rank_count and _scaleup_expert_count (in HBM workspace) 
+                        const auto count = static_cast<int>(
+                            ptx::ld_volatile<int64_t>(workspace_layout.get_scaleup_rank_expert_count_ptr<false>() + i));
+                        const auto decoded = math::encode_decode_positive(count); // f(f(v)) = v
+                        if (math::is_decoded_positive_ready(decoded)) {
+                            workspace_layout.get_scaleup_rank_expert_count_ptr<false>()[i] = 0;
 
-                    if (is_last_check)
-                        printf("DeepEP notify timeout, rank: %d, thread: %d, count: %d\n", rank_idx, i, decoded);
-                    return false;
-                }, start_clock);
+                            // Note the shared memory rank_expert_count is updated in this phase (loading the count from HBM written by other peers)
+                            rank_expert_count[i] = decoded;
+                            return true;
+                        }
+
+                        if (is_last_check)
+                            printf("DeepEP notify timeout, rank: %d, thread: %d, count: %d\n", rank_idx, i, decoded);
+                        return false;
+                    }, 
+                    start_clock
+                );
             }
             ptx::named_barrier<kNumNotifyThreads>(kNotifyBarrierIndex);
 
@@ -205,6 +229,7 @@ dispatch_impl(
                 int sum = 0;
                 #pragma unroll
                 for (int j = 0; j < kNumRanks; ++ j)
+                    // After the last phase, the sum is now aggregating the number of tokens sent to local expert i from other ranks
                     sum += expert_count[j * kNumExpertsPerRank + i];
 
                 // Write unaligned count before aligning
@@ -259,9 +284,14 @@ dispatch_impl(
         const int dispatch_warp_idx = warp_idx - kNumNotifyWarps;
 
         // Buffer layouts
-        const auto token_layout = layout::TokenLayout(kNumHiddenBytes, kNumSFPacks * sizeof(sf_pack_t), kNumTopk, true);
-        const auto tma_buffer = layout::BufferLayout<true>(token_layout, kNumDispatchWarps, 1,
-            math::advance_ptr<int>(smem, kNumSmemBytesForNotify)).get_rank_buffer(dispatch_warp_idx).get_token_buffer(0);
+        const auto token_layout = layout::TokenLayout(kNumHiddenBytes, kNumSFPacks * sizeof(sf_pack_t), kNumTopk, true);\
+        // TMA buffer is located at SMEM
+        const auto tma_buffer = layout::BufferLayout<true>(
+            token_layout, kNumDispatchWarps, 1,
+            math::advance_ptr<int>(smem, kNumSmemBytesForNotify)
+        ).get_rank_buffer(dispatch_warp_idx).get_token_buffer(0);
+ 
+        // recv_buffer is located at HBM
         auto recv_buffer = layout::BufferLayout<false>(token_layout, kNumRanks, kNumMaxTokensPerRank, buffer);
         auto send_buffer = layout::BufferLayout<false>(token_layout, 1, kNumMaxTokensPerRank, recv_buffer.get_buffer_end_ptr());
         recv_buffer = recv_buffer.get_rank_buffer(rank_idx);
@@ -277,6 +307,8 @@ dispatch_impl(
         const auto token_start = dispatch_warp_idx * kNumSMs + sm_idx;
         const auto token_stride = kNumDispatchWarps * kNumSMs;
         for (int token_idx = token_start; token_idx < num_tokens; token_idx += token_stride) {
+            // Task assignment: each lane responsible for one top-k entry, each warp handles one token, all SMs handle a `token_stride = num_dispatch_warps * num_sms` of tokens at a time.
+
             const auto token_i64_idx = static_cast<int64_t>(token_idx);
 
             // Wait TMA store arrivals
@@ -285,8 +317,14 @@ dispatch_impl(
 
             // Issue data TMA
             if (ptx::elect_one_sync()) {
-                ptx::tma_load_1d(tma_buffer.get_hidden_ptr(), math::advance_ptr(x, token_i64_idx * kNumHiddenBytes),
-                                 mbarrier_ptr, kNumHiddenBytes);
+                // Load the the [hidden_dim] data corresponding to the token (pointed by token_i64_idx) from the global memory (x) to the TMA buffer (tma_buffer)
+                // Note that `kNumHiddenBytes` is the hidden * elem_size (i.e. the number of bytes across the hidden dimensions of one token)
+                // Because one warp is reponsible for one token at a time, only one thread within this warp needs to do the TMA load
+                ptx::tma_load_1d(
+                    tma_buffer.get_hidden_ptr(), 
+                    math::advance_ptr(x, token_i64_idx * kNumHiddenBytes),
+                    mbarrier_ptr, kNumHiddenBytes
+                );
             }
             __syncwarp();
 
@@ -316,6 +354,8 @@ dispatch_impl(
             if (lane_idx < kNumTopk) {
                 const auto dst_expert_idx = static_cast<int>(__ldg(topk_idx + token_idx * kNumTopk + lane_idx));
                 stored_dst_rank_idx = dst_expert_idx >= 0 ? dst_expert_idx / kNumExpertsPerRank : -1;
+
+                // Saved dst_expert_idx into the metadata area of the TMA buffer (just after the hidden bytes if no SF applied) 
                 tma_buffer.get_topk_idx_ptr()[lane_idx] = dst_expert_idx;
                 if (topk_weights != nullptr)
                     tma_buffer.get_topk_weights_ptr()[lane_idx] = __ldg(topk_weights + token_idx * kNumTopk + lane_idx);
@@ -326,7 +366,9 @@ dispatch_impl(
             // Please ensure no TMA buffer shared memory writes after this part
             if (ptx::elect_one_sync())
                 *tma_buffer.get_src_token_global_idx_ptr() = rank_idx * kNumMaxTokensPerRank + token_idx;
-            ptx::tma_store_fence();
+            
+            // this fence orders shared memory writes made by regular CUDA threads so they are visible to asynchronous hardware units 
+            ptx::tma_store_fence(); 
             __syncwarp();
 
             // Deduplicate ranks and assign slots
@@ -338,8 +380,15 @@ dispatch_impl(
                     (stored_dst_slot_idx - rank_idx * kNumMaxTokensPerRank) : -1;
             } else {
                 if (ptx::deduplicate(stored_dst_rank_idx, lane_idx) and stored_dst_rank_idx >= 0)
+                    // Only the lane with the highest lane index among those sharing the same stored_dst_rank_idx will perform the atomic add
+                    // Q: is stored_dst_slot_idx now updated? 
+                    // A: Yes, the atomicAdd returns the old value stored at the provided address (`workspace_layout.get_scaleup_atomic_sender_counter() + stored_dst_rank_idx`)
+                    
+                    // Remember this operation is only executed by one lane per warp while all warps need a slot index for the corresponding area in the target ranks' recv buffer
+                    // thus this operation returns the current slot pointer and increments it atomically, ensuring all warps getting different slot indices
                     stored_dst_slot_idx = atomicAdd(workspace_layout.get_scaleup_atomic_sender_counter() + stored_dst_rank_idx, 1);
                 if (lane_idx < kNumTopk) {
+                    // Keep the global slot index for combine
                     const auto value = stored_dst_slot_idx >= 0 ?
                         rank_idx * kNumMaxTokensPerRank + stored_dst_slot_idx : -1;
                     dst_buffer_slot_idx[token_idx * kNumTopk + lane_idx] = value;
@@ -370,6 +419,7 @@ dispatch_impl(
                 gin.get_sym_ptr<team_t>(recv_buffer.get_token_buffer(stored_dst_slot_idx).get_base_ptr(), stored_dst_rank_idx) :
                 nullptr;
             if (dst_ptr != nullptr)
+                // Concretely execute the remote store via TMA (from local SMEM to remote GPU's global memory)
                 ptx::tma_store_1d(dst_ptr, tma_buffer.get_base_ptr(), tma_buffer.get_num_bytes<false>());
             ptx::tma_store_commit();
             __syncwarp();
@@ -391,9 +441,13 @@ dispatch_impl(
     }
 
     // Barrier to ensure data arrival
-    comm::gpu_barrier<kIsScaleupNVLink, 1, kNumRanks,
-                      kNumSMs, kNumThreads, kNumQPs, kNumTimeoutCycles, comm::kDispatchTag1, true, true, false>(
-        gin, workspace_layout.get_barrier_signals(), 0, rank_idx, sm_idx, thread_idx);
+    comm::gpu_barrier<
+            kIsScaleupNVLink, 1, kNumRanks,
+            kNumSMs, kNumThreads, kNumQPs, kNumTimeoutCycles, 
+            comm::kDispatchTag1, true, true, false
+    >(
+        gin, workspace_layout.get_barrier_signals(), 0, rank_idx, sm_idx, thread_idx
+    );
 
     // Trigger the copy epilogue kernel
     cudaTriggerProgrammaticLaunchCompletion();

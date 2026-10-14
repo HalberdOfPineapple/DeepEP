@@ -30,10 +30,12 @@ struct EPWorkspaceLayout {
     int num_experts, num_experts_per_rank;
 
     __forceinline__ __device__ __host__
-    EPWorkspaceLayout(void* base,
-                      const int& num_scaleout_ranks,
-                      const int& num_scaleup_ranks,
-                      const int& num_experts):
+    EPWorkspaceLayout(
+        void* base,
+        const int& num_scaleout_ranks,
+        const int& num_scaleup_ranks,
+        const int& num_experts
+    ):
         signals(*static_cast<EPSignals*>(base)),
         num_ranks(num_scaleout_ranks * num_scaleup_ranks),
         num_scaleout_ranks(num_scaleout_ranks),

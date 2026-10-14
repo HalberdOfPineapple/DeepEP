@@ -1,0 +1,247 @@
+lat src0->dst0 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst0 wait_group                       64 B  p50      144 ns  p99      144 ns
+lat src0->dst0 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst0 wait_group                     1024 B  p50      155 ns  p99      155 ns
+lat src0->dst0 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst0 wait_group                    14464 B  p50      367 ns  p99      367 ns
+lat src0->dst0 wait_group                    32768 B  p50      656 ns  p99      656 ns
+lat src0->dst0 wait_group                    65536 B  p50     1173 ns  p99     1173 ns
+lat src0->dst0 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst0 wait_group.read                  64 B  p50      138 ns  p99      138 ns
+lat src0->dst0 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst0 wait_group.read                1024 B  p50      149 ns  p99      149 ns
+lat src0->dst0 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst0 wait_group.read               14464 B  p50      361 ns  p99      361 ns
+lat src0->dst0 wait_group.read               32768 B  p50      650 ns  p99      650 ns
+lat src0->dst0 wait_group.read               65536 B  p50     1167 ns  p99     1167 ns
+lat src0->dst0 wait_group+fence.sys             16 B  p50     1777 ns  p99     1807 ns
+lat src0->dst0 wait_group+fence.sys             64 B  p50     1777 ns  p99     1814 ns
+lat src0->dst0 wait_group+fence.sys            256 B  p50     1777 ns  p99     1802 ns
+lat src0->dst0 wait_group+fence.sys           1024 B  p50     1777 ns  p99     1800 ns
+lat src0->dst0 wait_group+fence.sys           4096 B  p50     1792 ns  p99     1957 ns
+lat src0->dst0 wait_group+fence.sys          14464 B  p50     1962 ns  p99     2042 ns
+lat src0->dst0 wait_group+fence.sys          32768 B  p50     2257 ns  p99     2334 ns
+lat src0->dst0 wait_group+fence.sys          65536 B  p50     2765 ns  p99     2952 ns
+lat src0->dst0 wait_group.read+fence.sys        16 B  p50     1777 ns  p99     1830 ns
+lat src0->dst0 wait_group.read+fence.sys        64 B  p50     1777 ns  p99     1833 ns
+lat src0->dst0 wait_group.read+fence.sys       256 B  p50     1777 ns  p99     1794 ns
+lat src0->dst0 wait_group.read+fence.sys      1024 B  p50     1777 ns  p99     1798 ns
+lat src0->dst0 wait_group.read+fence.sys      4096 B  p50     1787 ns  p99     1865 ns
+lat src0->dst0 wait_group.read+fence.sys     14464 B  p50     1950 ns  p99     2136 ns
+lat src0->dst0 wait_group.read+fence.sys     32768 B  p50     2241 ns  p99     2355 ns
+lat src0->dst0 wait_group.read+fence.sys     65536 B  p50     2765 ns  p99     2953 ns
+lat src0->dst0 st.global x32 lanes+fence.sys     16 B  p50     1777 ns  p99     1795 ns
+lat src0->dst0 st.global x32 lanes+fence.sys     64 B  p50     1777 ns  p99     1804 ns
+lat src0->dst0 st.global x32 lanes+fence.sys    256 B  p50     1777 ns  p99     1795 ns
+lat src0->dst0 st.global x32 lanes+fence.sys   1024 B  p50     1784 ns  p99     1828 ns
+lat src0->dst0 st.global x32 lanes+fence.sys   4096 B  p50     2192 ns  p99     2378 ns
+lat src0->dst0 st.global x32 lanes+fence.sys  14464 B  p50     3445 ns  p99     3510 ns
+lat src0->dst0 st.global x32 lanes+fence.sys  32768 B  p50     5676 ns  p99     5692 ns
+lat src0->dst0 st.global x32 lanes+fence.sys  65536 B  p50     9376 ns  p99     9575 ns
+lat src0->dst0 wait_group+fence.gpu             16 B  p50      483 ns  p99      485 ns
+lat src0->dst0 wait_group+fence.gpu             64 B  p50      483 ns  p99      485 ns
+lat src0->dst0 wait_group+fence.gpu            256 B  p50      483 ns  p99      485 ns
+lat src0->dst0 wait_group+fence.gpu           1024 B  p50      494 ns  p99      496 ns
+lat src0->dst0 wait_group+fence.gpu           4096 B  p50      543 ns  p99      544 ns
+lat src0->dst0 wait_group+fence.gpu          14464 B  p50      707 ns  p99      708 ns
+lat src0->dst0 wait_group+fence.gpu          32768 B  p50      995 ns  p99      996 ns
+lat src0->dst0 wait_group+fence.gpu          65536 B  p50     1513 ns  p99     1514 ns
+lat src0->dst1 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst1 wait_group                       64 B  p50      144 ns  p99      144 ns
+lat src0->dst1 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst1 wait_group                     1024 B  p50      155 ns  p99      155 ns
+lat src0->dst1 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst1 wait_group                    14464 B  p50      372 ns  p99      372 ns
+lat src0->dst1 wait_group                    32768 B  p50      733 ns  p99      733 ns
+lat src0->dst1 wait_group                    65536 B  p50     1379 ns  p99     1379 ns
+lat src0->dst1 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst1 wait_group.read                  64 B  p50      138 ns  p99      138 ns
+lat src0->dst1 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst1 wait_group.read                1024 B  p50      149 ns  p99      149 ns
+lat src0->dst1 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst1 wait_group.read               14464 B  p50      366 ns  p99      366 ns
+lat src0->dst1 wait_group.read               32768 B  p50      727 ns  p99      727 ns
+lat src0->dst1 wait_group.read               65536 B  p50     1373 ns  p99     1373 ns
+lat src0->dst1 wait_group+fence.sys             16 B  p50     1777 ns  p99     1796 ns
+lat src0->dst1 wait_group+fence.sys             64 B  p50     1777 ns  p99     1812 ns
+lat src0->dst1 wait_group+fence.sys            256 B  p50     1777 ns  p99     1792 ns
+lat src0->dst1 wait_group+fence.sys           1024 B  p50     1777 ns  p99     1805 ns
+lat src0->dst1 wait_group+fence.sys           4096 B  p50     1793 ns  p99     1961 ns
+lat src0->dst1 wait_group+fence.sys          14464 B  p50     1971 ns  p99     2144 ns
+lat src0->dst1 wait_group+fence.sys          32768 B  p50     2325 ns  p99     2422 ns
+lat src0->dst1 wait_group+fence.sys          65536 B  p50     2970 ns  p99     3124 ns
+lat src0->dst1 wait_group.read+fence.sys        16 B  p50     1777 ns  p99     1833 ns
+lat src0->dst1 wait_group.read+fence.sys        64 B  p50     1777 ns  p99     1822 ns
+lat src0->dst1 wait_group.read+fence.sys       256 B  p50     1777 ns  p99     1799 ns
+lat src0->dst1 wait_group.read+fence.sys      1024 B  p50     1777 ns  p99     1823 ns
+lat src0->dst1 wait_group.read+fence.sys      4096 B  p50     1787 ns  p99     1862 ns
+lat src0->dst1 wait_group.read+fence.sys     14464 B  p50     1958 ns  p99     2116 ns
+lat src0->dst1 wait_group.read+fence.sys     32768 B  p50     2319 ns  p99     2455 ns
+lat src0->dst1 wait_group.read+fence.sys     65536 B  p50     2969 ns  p99     3155 ns
+lat src0->dst1 st.global x32 lanes+fence.sys     16 B  p50     1776 ns  p99     1839 ns
+lat src0->dst1 st.global x32 lanes+fence.sys     64 B  p50     1777 ns  p99     1809 ns
+lat src0->dst1 st.global x32 lanes+fence.sys    256 B  p50     1777 ns  p99     1807 ns
+lat src0->dst1 st.global x32 lanes+fence.sys   1024 B  p50     1784 ns  p99     1858 ns
+lat src0->dst1 st.global x32 lanes+fence.sys   4096 B  p50     2192 ns  p99     2372 ns
+lat src0->dst1 st.global x32 lanes+fence.sys  14464 B  p50     3445 ns  p99     3509 ns
+lat src0->dst1 st.global x32 lanes+fence.sys  32768 B  p50     5676 ns  p99     5721 ns
+lat src0->dst1 st.global x32 lanes+fence.sys  65536 B  p50     9375 ns  p99     9532 ns
+lat src0->dst1 wait_group+fence.gpu             16 B  p50      543 ns  p99      546 ns
+lat src0->dst1 wait_group+fence.gpu             64 B  p50      543 ns  p99      546 ns
+lat src0->dst1 wait_group+fence.gpu            256 B  p50      543 ns  p99      546 ns
+lat src0->dst1 wait_group+fence.gpu           1024 B  p50      555 ns  p99      556 ns
+lat src0->dst1 wait_group+fence.gpu           4096 B  p50      604 ns  p99      605 ns
+lat src0->dst1 wait_group+fence.gpu          14464 B  p50      771 ns  p99      772 ns
+lat src0->dst1 wait_group+fence.gpu          32768 B  p50     1132 ns  p99     1133 ns
+lat src0->dst1 wait_group+fence.gpu          65536 B  p50     1778 ns  p99     1779 ns
+lat src0->dst2 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst2 wait_group                       64 B  p50      144 ns  p99      144 ns
+lat src0->dst2 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst2 wait_group                     1024 B  p50      155 ns  p99      155 ns
+lat src0->dst2 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst2 wait_group                    14464 B  p50      372 ns  p99      372 ns
+lat src0->dst2 wait_group                    32768 B  p50      733 ns  p99      733 ns
+lat src0->dst2 wait_group                    65536 B  p50     1379 ns  p99     1379 ns
+lat src0->dst2 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst2 wait_group.read                  64 B  p50      138 ns  p99      138 ns
+lat src0->dst2 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst2 wait_group.read                1024 B  p50      149 ns  p99      149 ns
+lat src0->dst2 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst2 wait_group.read               14464 B  p50      366 ns  p99      366 ns
+lat src0->dst2 wait_group.read               32768 B  p50      727 ns  p99      727 ns
+lat src0->dst2 wait_group.read               65536 B  p50     1373 ns  p99     1373 ns
+lat src0->dst2 wait_group+fence.sys             16 B  p50     1777 ns  p99     1829 ns
+lat src0->dst2 wait_group+fence.sys             64 B  p50     1777 ns  p99     1826 ns
+lat src0->dst2 wait_group+fence.sys            256 B  p50     1776 ns  p99     1840 ns
+lat src0->dst2 wait_group+fence.sys           1024 B  p50     1776 ns  p99     1838 ns
+lat src0->dst2 wait_group+fence.sys           4096 B  p50     1793 ns  p99     1974 ns
+lat src0->dst2 wait_group+fence.sys          14464 B  p50     1972 ns  p99     2161 ns
+lat src0->dst2 wait_group+fence.sys          32768 B  p50     2325 ns  p99     2416 ns
+lat src0->dst2 wait_group+fence.sys          65536 B  p50     2971 ns  p99     3126 ns
+lat src0->dst2 wait_group.read+fence.sys        16 B  p50     1777 ns  p99     1837 ns
+lat src0->dst2 wait_group.read+fence.sys        64 B  p50     1776 ns  p99     1827 ns
+lat src0->dst2 wait_group.read+fence.sys       256 B  p50     1777 ns  p99     1808 ns
+lat src0->dst2 wait_group.read+fence.sys      1024 B  p50     1777 ns  p99     1810 ns
+lat src0->dst2 wait_group.read+fence.sys      4096 B  p50     1786 ns  p99     1867 ns
+lat src0->dst2 wait_group.read+fence.sys     14464 B  p50     1958 ns  p99     2104 ns
+lat src0->dst2 wait_group.read+fence.sys     32768 B  p50     2319 ns  p99     2474 ns
+lat src0->dst2 wait_group.read+fence.sys     65536 B  p50     2969 ns  p99     3159 ns
+lat src0->dst2 st.global x32 lanes+fence.sys     16 B  p50     1776 ns  p99     1837 ns
+lat src0->dst2 st.global x32 lanes+fence.sys     64 B  p50     1777 ns  p99     1837 ns
+lat src0->dst2 st.global x32 lanes+fence.sys    256 B  p50     1776 ns  p99     1807 ns
+lat src0->dst2 st.global x32 lanes+fence.sys   1024 B  p50     1784 ns  p99     1837 ns
+lat src0->dst2 st.global x32 lanes+fence.sys   4096 B  p50     2193 ns  p99     2380 ns
+lat src0->dst2 st.global x32 lanes+fence.sys  14464 B  p50     3445 ns  p99     3512 ns
+lat src0->dst2 st.global x32 lanes+fence.sys  32768 B  p50     5675 ns  p99     5709 ns
+lat src0->dst2 st.global x32 lanes+fence.sys  65536 B  p50     9375 ns  p99     9522 ns
+lat src0->dst2 wait_group+fence.gpu             16 B  p50      543 ns  p99      546 ns
+lat src0->dst2 wait_group+fence.gpu             64 B  p50      543 ns  p99      546 ns
+lat src0->dst2 wait_group+fence.gpu            256 B  p50      543 ns  p99      546 ns
+lat src0->dst2 wait_group+fence.gpu           1024 B  p50      555 ns  p99      558 ns
+lat src0->dst2 wait_group+fence.gpu           4096 B  p50      603 ns  p99      606 ns
+lat src0->dst2 wait_group+fence.gpu          14464 B  p50      770 ns  p99      773 ns
+lat src0->dst2 wait_group+fence.gpu          32768 B  p50     1131 ns  p99     1134 ns
+lat src0->dst2 wait_group+fence.gpu          65536 B  p50     1778 ns  p99     1779 ns
+lat src0->dst3 wait_group                       16 B  p50      144 ns  p99      144 ns
+lat src0->dst3 wait_group                       64 B  p50      144 ns  p99      144 ns
+lat src0->dst3 wait_group                      256 B  p50      144 ns  p99      144 ns
+lat src0->dst3 wait_group                     1024 B  p50      155 ns  p99      155 ns
+lat src0->dst3 wait_group                     4096 B  p50      204 ns  p99      204 ns
+lat src0->dst3 wait_group                    14464 B  p50      372 ns  p99      372 ns
+lat src0->dst3 wait_group                    32768 B  p50      733 ns  p99      733 ns
+lat src0->dst3 wait_group                    65536 B  p50     1379 ns  p99     1379 ns
+lat src0->dst3 wait_group.read                  16 B  p50      138 ns  p99      138 ns
+lat src0->dst3 wait_group.read                  64 B  p50      138 ns  p99      138 ns
+lat src0->dst3 wait_group.read                 256 B  p50      138 ns  p99      138 ns
+lat src0->dst3 wait_group.read                1024 B  p50      149 ns  p99      149 ns
+lat src0->dst3 wait_group.read                4096 B  p50      197 ns  p99      197 ns
+lat src0->dst3 wait_group.read               14464 B  p50      366 ns  p99      366 ns
+lat src0->dst3 wait_group.read               32768 B  p50      727 ns  p99      727 ns
+lat src0->dst3 wait_group.read               65536 B  p50     1373 ns  p99     1373 ns
+lat src0->dst3 wait_group+fence.sys             16 B  p50     1777 ns  p99     1815 ns
+lat src0->dst3 wait_group+fence.sys             64 B  p50     1777 ns  p99     1828 ns
+lat src0->dst3 wait_group+fence.sys            256 B  p50     1777 ns  p99     1822 ns
+lat src0->dst3 wait_group+fence.sys           1024 B  p50     1777 ns  p99     1809 ns
+lat src0->dst3 wait_group+fence.sys           4096 B  p50     1794 ns  p99     1966 ns
+lat src0->dst3 wait_group+fence.sys          14464 B  p50     1972 ns  p99     2144 ns
+lat src0->dst3 wait_group+fence.sys          32768 B  p50     2325 ns  p99     2419 ns
+lat src0->dst3 wait_group+fence.sys          65536 B  p50     2970 ns  p99     3151 ns
+lat src0->dst3 wait_group.read+fence.sys        16 B  p50     1777 ns  p99     1818 ns
+lat src0->dst3 wait_group.read+fence.sys        64 B  p50     1776 ns  p99     1836 ns
+lat src0->dst3 wait_group.read+fence.sys       256 B  p50     1777 ns  p99     1811 ns
+lat src0->dst3 wait_group.read+fence.sys      1024 B  p50     1777 ns  p99     1802 ns
+lat src0->dst3 wait_group.read+fence.sys      4096 B  p50     1787 ns  p99     1873 ns
+lat src0->dst3 wait_group.read+fence.sys     14464 B  p50     1958 ns  p99     2100 ns
+lat src0->dst3 wait_group.read+fence.sys     32768 B  p50     2319 ns  p99     2441 ns
+lat src0->dst3 wait_group.read+fence.sys     65536 B  p50     2969 ns  p99     3156 ns
+lat src0->dst3 st.global x32 lanes+fence.sys     16 B  p50     1776 ns  p99     1840 ns
+lat src0->dst3 st.global x32 lanes+fence.sys     64 B  p50     1776 ns  p99     1807 ns
+lat src0->dst3 st.global x32 lanes+fence.sys    256 B  p50     1776 ns  p99     1833 ns
+lat src0->dst3 st.global x32 lanes+fence.sys   1024 B  p50     1784 ns  p99     1830 ns
+lat src0->dst3 st.global x32 lanes+fence.sys   4096 B  p50     2192 ns  p99     2370 ns
+lat src0->dst3 st.global x32 lanes+fence.sys  14464 B  p50     3445 ns  p99     3519 ns
+lat src0->dst3 st.global x32 lanes+fence.sys  32768 B  p50     5676 ns  p99     5705 ns
+lat src0->dst3 st.global x32 lanes+fence.sys  65536 B  p50     9375 ns  p99     9541 ns
+lat src0->dst3 wait_group+fence.gpu             16 B  p50      543 ns  p99      546 ns
+lat src0->dst3 wait_group+fence.gpu             64 B  p50      543 ns  p99      546 ns
+lat src0->dst3 wait_group+fence.gpu            256 B  p50      543 ns  p99      546 ns
+lat src0->dst3 wait_group+fence.gpu           1024 B  p50      555 ns  p99      558 ns
+lat src0->dst3 wait_group+fence.gpu           4096 B  p50      603 ns  p99      606 ns
+lat src0->dst3 wait_group+fence.gpu          14464 B  p50      770 ns  p99      773 ns
+lat src0->dst3 wait_group+fence.gpu          32768 B  p50     1131 ns  p99     1134 ns
+lat src0->dst3 wait_group+fence.gpu          65536 B  p50     1778 ns  p99     1781 ns
+conc 1 SM x  1 warps  p50      372 ns  p99      372 ns  issue-rate 38.9 GB/s  delivered(incl. drain) 25.1 GB/s
+conc 1 SM x  4 warps  p50      976 ns  p99      976 ns  issue-rate 59.3 GB/s  delivered(incl. drain) 50.3 GB/s
+conc 1 SM x  8 warps  p50     2124 ns  p99     2125 ns  issue-rate 54.5 GB/s  delivered(incl. drain) 50.3 GB/s
+conc 1 SM x 15 warps  p50     4424 ns  p99     4425 ns  issue-rate 55.1 GB/s  delivered(incl. drain) 50.3 GB/s
+conc  1 SMs x 15 warps  p50     4424 ns  p99     4425 ns  issue-rate 55.1 GB/s  delivered(incl. drain) 50.3 GB/s
+conc  2 SMs x 15 warps  p50     4409 ns  p99     4425 ns  issue-rate 110.4 GB/s  delivered(incl. drain) 100.7 GB/s
+conc  4 SMs x 15 warps  p50     4403 ns  p99     5578 ns  issue-rate 220.8 GB/s  delivered(incl. drain) 201.3 GB/s
+conc  8 SMs x 15 warps  p50     4424 ns  p99     6470 ns  issue-rate 409.2 GB/s  delivered(incl. drain) 349.4 GB/s
+conc 16 SMs x 15 warps  p50     4912 ns  p99    30206 ns  issue-rate 558.1 GB/s  delivered(incl. drain) 352.4 GB/s
+conc  1 SMs x 15 warps dst1 wait_group+fence.sys   p50     4398 ns p99     5754 ns  delivered 46.1 GB/s
+conc  4 SMs x 15 warps dst1 wait_group+fence.sys   p50     4017 ns p99     7657 ns  delivered 164.1 GB/s
+conc 16 SMs x 15 warps dst1 wait_group+fence.sys   p50     6836 ns p99    24018 ns  delivered 339.6 GB/s
+conc  1 SMs x 15 warps dst0 wait_group             p50     3496 ns p99     3503 ns  delivered 62.6 GB/s
+conc  4 SMs x 15 warps dst0 wait_group             p50     3500 ns p99     3520 ns  delivered 250.7 GB/s
+conc 16 SMs x 15 warps dst0 wait_group             p50     3502 ns p99     3645 ns  delivered 982.7 GB/s
+issue src0->dst0   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst0   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst0   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst0  14464 B: base gap    112 ns, knee at None, all 512 done at    117.8 us
+issue src0->dst0  14464 B: base gap    112 ns, knee at None, all 512 done at    117.8 us
+issue src0->dst0  14464 B: base gap    112 ns, knee at None, all 512 done at    117.8 us
+issue src0->dst0  65536 B: base gap    408 ns, knee at None, all 512 done at    530.5 us
+issue src0->dst0  65536 B: base gap    408 ns, knee at None, all 512 done at    530.5 us
+issue src0->dst0  65536 B: base gap    408 ns, knee at None, all 512 done at    530.5 us
+issue src0->dst1   1024 B: base gap    110 ns, knee at 235, all 512 done at    110.5 us
+issue src0->dst1   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst1   1024 B: base gap    110 ns, knee at None, all 512 done at     58.3 us
+issue src0->dst1  14464 B: base gap    112 ns, knee at None, all 512 done at    146.7 us
+issue src0->dst1  14464 B: base gap    112 ns, knee at None, all 512 done at    146.7 us
+issue src0->dst1  14464 B: base gap    112 ns, knee at None, all 512 done at    146.7 us
+issue src0->dst1  65536 B: base gap    507 ns, knee at None, all 512 done at    662.6 us
+issue src0->dst1  65536 B: base gap    507 ns, knee at None, all 512 done at    662.6 us
+issue src0->dst1  65536 B: base gap    507 ns, knee at None, all 512 done at    662.6 us
+pingpong 0<->1: RTT p50   1184 ns p99   1344 ns | offset(b-a) 2045536000 ns +-     24
+pingpong 0<->2: RTT p50   1344 ns p99   1504 ns | offset(b-a) -1348702208 ns +-     50
+pingpong 0<->3: RTT p50   1184 ns p99   1344 ns | offset(b-a)  879582592 ns +-     35
+pingpong 1<->0: RTT p50   1248 ns p99   1312 ns | offset(b-a) -2045536128 ns +-     41
+pingpong 1<->2: RTT p50   1280 ns p99   1440 ns | offset(b-a) -3394238464 ns +-     43
+pingpong 1<->3: RTT p50   1248 ns p99   1312 ns | offset(b-a) -1165953664 ns +-     47
+pingpong 2<->0: RTT p50   1344 ns p99   1504 ns | offset(b-a) 1348702464 ns +-     63
+pingpong 2<->1: RTT p50   1344 ns p99   1472 ns | offset(b-a) 3394238976 ns +-    126
+pingpong 2<->3: RTT p50   1344 ns p99   1504 ns | offset(b-a) 2228285184 ns +-     15
+pingpong 3<->0: RTT p50   1280 ns p99   1344 ns | offset(b-a) -879582784 ns +-     38
+pingpong 3<->1: RTT p50   1280 ns p99   1344 ns | offset(b-a) 1165953792 ns +-     16
+pingpong 3<->2: RTT p50   1344 ns p99   1504 ns | offset(b-a) -2228285440 ns +-      6
+visibility wait_group                     4096 B: rounds with stale data 52/2000  max stale chunks 240/256
+visibility wait_group                    14464 B: rounds with stale data 24/2000  max stale chunks 224/904
+visibility wait_group                    65536 B: rounds with stale data 0/2000  max stale chunks 0/4096
+visibility wait_group.read                4096 B: rounds with stale data 0/2000  max stale chunks 0/256
+visibility wait_group.read               14464 B: rounds with stale data 0/2000  max stale chunks 0/904
+visibility wait_group.read               65536 B: rounds with stale data 0/2000  max stale chunks 0/4096
+visibility wait_group+fence.sys           4096 B: rounds with stale data 0/2000  max stale chunks 0/256
+visibility wait_group+fence.sys          14464 B: rounds with stale data 0/2000  max stale chunks 0/904
+visibility wait_group+fence.sys          65536 B: rounds with stale data 0/2000  max stale chunks 0/4096
+saved /root/DeepEP/experiments/observability-exploration/E1-bulk-store-completion/results/e1_results.json

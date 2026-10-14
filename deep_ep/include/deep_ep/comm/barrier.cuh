@@ -115,6 +115,8 @@ __forceinline__ __device__ void nvlink_barrier_wo_local_sync(
     // Check timeout
     const auto target = sign ? 0 : kNumRanks;
     timeout_while<kNumTimeoutCycles>(thread_idx == 0, [=](const bool& is_last_check) {
+        // Thread 0 loops with ld_acquire_sys on the local barrier word until it equals the number of ranks.
+        
         const auto signal = ptx::ld_acquire_sys<int>(signal_ptr);
         if (signal == target)
             return true;

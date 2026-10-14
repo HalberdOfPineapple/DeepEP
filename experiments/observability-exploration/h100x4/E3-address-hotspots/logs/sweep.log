@@ -1,0 +1,43 @@
+patched /root/DeepEP/experiments/observability-exploration/common/pkg/deep_ep/include/deep_ep/impls/ep/dispatch.cuh: trace=1 wait_read=False pad_counters=False relocate_recv=0
+>> base 16 4096
+   rank 0: dispatch    598.1 us untraced,    600.0 us traced (+0.3%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 268
+   rank 1: dispatch    597.2 us untraced,    599.2 us traced (+0.3%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 269
+   rank 2: dispatch    597.3 us untraced,    599.3 us traced (+0.3%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 269
+   rank 3: dispatch    597.2 us untraced,    599.2 us traced (+0.3%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 268
+>> base 32 4096
+   rank 0: dispatch    562.4 us untraced,    564.4 us traced (+0.4%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 285
+   rank 1: dispatch    562.3 us untraced,    564.4 us traced (+0.4%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 285
+   rank 2: dispatch    561.8 us untraced,    563.9 us traced (+0.4%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 286
+   rank 3: dispatch    560.9 us untraced,    562.9 us traced (+0.4%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 285
+>> base 16 256
+   rank 0: dispatch     52.7 us untraced,     53.5 us traced (+1.6%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 190
+   rank 1: dispatch     52.0 us untraced,     52.8 us traced (+1.5%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 189
+   rank 2: dispatch     52.1 us untraced,     52.8 us traced (+1.4%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 190
+   rank 3: dispatch     51.4 us untraced,     52.0 us traced (+1.2%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 196
+>> base 32 256
+   rank 0: dispatch     51.1 us untraced,     51.4 us traced (+0.7%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 196
+   rank 1: dispatch     50.4 us untraced,     50.8 us traced (+0.9%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 195
+   rank 2: dispatch     50.2 us untraced,     50.7 us traced (+0.9%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 197
+   rank 3: dispatch     49.5 us untraced,     50.0 us traced (+0.8%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 204
+patched /root/DeepEP/experiments/observability-exploration/common/pkg/deep_ep/include/deep_ep/impls/ep/dispatch.cuh: trace=1 wait_read=False pad_counters=True relocate_recv=0
+>> padded 16 4096
+   rank 0: dispatch    599.2 us untraced,    599.9 us traced (+0.1%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 268
+   rank 1: dispatch    598.7 us untraced,    599.3 us traced (+0.1%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 268
+   rank 2: dispatch    598.6 us untraced,    599.1 us traced (+0.1%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 268
+   rank 3: dispatch    598.4 us untraced,    599.0 us traced (+0.1%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 267
+>> padded 32 4096
+   rank 0: dispatch    563.2 us untraced,    563.7 us traced (+0.1%), E[k]=3.61, dst_counts=[3695, 3694, 3695, 3695], remote GB/s ~ 285
+   rank 1: dispatch    563.3 us untraced,    563.8 us traced (+0.1%), E[k]=3.61, dst_counts=[3698, 3698, 3698, 3698], remote GB/s ~ 285
+   rank 2: dispatch    562.8 us untraced,    563.3 us traced (+0.1%), E[k]=3.61, dst_counts=[3700, 3699, 3699, 3699], remote GB/s ~ 285
+   rank 3: dispatch    561.4 us untraced,    561.9 us traced (+0.1%), E[k]=3.60, dst_counts=[3688, 3688, 3687, 3688], remote GB/s ~ 285
+>> padded 16 256
+   rank 0: dispatch     52.6 us untraced,     53.4 us traced (+1.5%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 190
+   rank 1: dispatch     52.2 us untraced,     53.0 us traced (+1.6%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 188
+   rank 2: dispatch     51.8 us untraced,     52.6 us traced (+1.6%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 191
+   rank 3: dispatch     51.3 us untraced,     52.1 us traced (+1.5%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 197
+>> padded 32 256
+   rank 0: dispatch     51.3 us untraced,     51.5 us traced (+0.5%), E[k]=3.61, dst_counts=[232, 231, 231, 231], remote GB/s ~ 195
+   rank 1: dispatch     50.5 us untraced,     50.7 us traced (+0.4%), E[k]=3.54, dst_counts=[227, 226, 226, 226], remote GB/s ~ 194
+   rank 2: dispatch     50.4 us untraced,     50.6 us traced (+0.4%), E[k]=3.57, dst_counts=[229, 228, 228, 228], remote GB/s ~ 196
+   rank 3: dispatch     49.6 us untraced,     49.8 us traced (+0.4%), E[k]=3.63, dst_counts=[233, 233, 232, 232], remote GB/s ~ 203
+patched /root/DeepEP/experiments/observability-exploration/common/pkg/deep_ep/include/deep_ep/impls/ep/dispatch.cuh: trace=1 wait_read=False pad_counters=False relocate_recv=0
